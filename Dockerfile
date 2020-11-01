@@ -45,6 +45,6 @@ RUN mkdir -p /mnt/data && \
 RUN /bin/bash -c 'if compgen -G "/app/**/*.sh" > /dev/null; then dos2unix /app/**/*.sh; fi'
 
 # Extend PYTHONPATH to load WikiSQL dependencies
-ENV PYTHONPATH="/app/third_party/wikisql/:${PYTHONPATH}" 
+ENV export PYTHONPATH="third_party/wikisql/:${PYTHONPATH}"
 
 ENTRYPOINT bash

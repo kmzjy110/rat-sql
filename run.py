@@ -5,7 +5,7 @@ import json
 
 import _jsonnet
 import attr
-from ratsql.commands import preprocess, train, infer, eval
+from ratsql.commands import preprocess, train, infer, eval, finetune
 
 @attr.s
 class PreprocessConfig:
@@ -44,6 +44,11 @@ class EvalConfig:
     inferred = attr.ib()
     output = attr.ib()
 
+@attr.s
+class FineTuneConfig:
+    config = attr.ib()
+    config_args = attr.ib()
+    logdir = attr.ib()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -75,6 +80,10 @@ def main():
         train_config = TrainConfig(model_config_file,
                                    model_config_args, logdir)
         train.main(train_config)
+    elif args.mode == "finetune":
+        fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir)
+        finetune.main(fine_tune_config)
+
     elif args.mode == "eval":
         for step in exp_config["eval_steps"]:
             infer_output_path = f"{exp_config['eval_output']}/{exp_config['eval_name']}-step{step}.infer"

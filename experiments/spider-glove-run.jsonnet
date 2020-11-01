@@ -1,5 +1,6 @@
 {
     logdir: "logdir/glove_run",
+    finetunedir: self.logdir + "/finetune"
     model_config: "configs/spider/nl2code-glove.jsonnet",
     model_config_args: {
         att: 0,

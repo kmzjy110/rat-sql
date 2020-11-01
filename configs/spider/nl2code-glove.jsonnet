@@ -86,5 +86,17 @@ function(args, data_path=_data_path) _base(output_from=true, data_path=data_path
         start_lr: lr,
         end_lr: end_lr,
     },
+    lr_scheduler_finetune+:{
+        start_lr:lr,
+        end_lr: lr
+    },
+    finetune+:{
+        batch_size:1,
+        num_batch_accumulated: 1,
+        clip_grad: null,
 
+        model_seed: att,
+        data_seed:  att,
+        init_seed:  att,
+    }
 }
