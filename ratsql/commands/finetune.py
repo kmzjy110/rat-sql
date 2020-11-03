@@ -118,15 +118,14 @@ class FineTuner:
             optimizer = registry.construct('optimizer', config['optimizer'], non_bert_params=non_bert_params,
                                            bert_params=bert_params)
             lr_scheduler = registry.construct('lr_scheduler',
-                                              config.get('lr_scheduler_finetune', {'name': 'noop'}),
+                                              config.get('lr_scheduler', {'name': 'noop'}),
                                               param_groups=[optimizer.non_bert_param_group,
                                                             optimizer.bert_param_group])
         else:
             optimizer = registry.construct('optimizer', config['optimizer'], params=self.model.parameters())
             lr_scheduler = registry.construct('lr_scheduler',
-                                              config.get('lr_scheduler_finetune', {'name': 'noop'}),
+                                              config.get('lr_scheduler', {'name': 'noop'}),
                                               param_groups=optimizer.param_groups)
-
 
         val_data = self.model_preproc.dataset('val')
         val_data_loader = torch.utils.data.DataLoader(
@@ -139,7 +138,7 @@ class FineTuner:
             saver = saver_mod.Saver(
                 {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
             last_step = saver.restore(model_load_dir, map_location=self.device)
-            print("last_step:", last_step)
+            print("Loaded trained model; last_step:", last_step)
             with data_random:
                 for batch in val_data_loader:
                     self._eval_model(self.logger, self.model, last_step, batch, 'val')
@@ -157,6 +156,7 @@ class FineTuner:
                     last_step+=1
                 if last_step % self.finetune_config.save_every_n == 0:
                     saver.save(model_save_dir+'/seed_'+seed, last_step)
+
 
 def main(args):
     if args.config_args:
@@ -180,7 +180,7 @@ def main(args):
 
     # Construct trainer and do training
     finetuner = FineTuner(logger, config)
-    finetuner.finetune(config, model_load_dir=args.logdir)
+    finetuner.finetune(config, model_load_dir=args.logdir, model_save_dir=args.finetunedir)
 
 if __name__ == '__main__':
     args = add_parser()
