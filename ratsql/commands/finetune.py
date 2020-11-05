@@ -40,7 +40,7 @@ def add_parser():
 @attr.s
 class FineTuneConfig:
     eval_every_n = attr.ib(default=100)
-    report_every_n = attr.ib(default=100)
+    report_every_n = attr.ib(default=10)
     save_every_n = attr.ib(default=100)
     keep_every_n = attr.ib(default=1000)
 
@@ -86,7 +86,7 @@ class FineTuner:
                                             preproc=self.model_preproc, device=self.device)
             self.model.to(self.device)
     @staticmethod
-    def _eval_model(logger, model, last_step, eval_data, eval_section):
+    def _eval_model(logger, model, last_step, eval_data, eval_section, report_every_n):
         stats = collections.defaultdict(float)
         model.eval()
         with torch.no_grad():
@@ -101,9 +101,9 @@ class FineTuner:
                 stats[k] /= stats['total']
         if 'total' in stats:
             del stats['total']
-
-        kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
-        logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
+        if last_step % report_every_n ==0:
+            kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
+            logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
         return stats
     def finetune(self, config, model_load_dir, model_save_dir):
 
@@ -127,7 +127,8 @@ class FineTuner:
                 val_losses = []
                 for batch in val_data_loader:
 
-                    stats = self._eval_model(self.logger, self.model, last_step, batch, 'val')
+                    stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
+                                             self.finetune_config.report_every_n)
                     val_losses.append(stats['val: loss'])
                     with self.model_random:
                         loss = self.model.compute_loss(batch)
