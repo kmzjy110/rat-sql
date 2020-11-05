@@ -139,7 +139,7 @@ class FineTuner:
                         lr_scheduler.update_lr(last_step)
                         optimizer.zero_grad()
                     last_step+=1
-                    self.logger.log("Stepped with val data. Step:", last_step)
+                    self.logger.log(f"Stepped with val data. Step:{last_step}")
                 if last_step % self.finetune_config.save_every_n == 0:
                     saver.save(model_save_dir+'/seed_'+seed, last_step)
     def construct_optimizer_and_lr_scheduler(self, config):
