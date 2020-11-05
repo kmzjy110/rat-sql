@@ -123,7 +123,7 @@ class FineTuner:
                 saver = saver_mod.Saver(
                     {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
                 last_step = saver.restore(model_load_dir, map_location=self.device)
-                self.logger.log("Loaded trained model; last_step:", last_step)
+                self.logger.log(f"Loaded trained model; last_step:{last_step}")
 
                 for batch in val_data_loader:
                     self._eval_model(self.logger, self.model, last_step, batch, 'val')
