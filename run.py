@@ -49,6 +49,7 @@ class FineTuneConfig:
     config = attr.ib()
     config_args = attr.ib()
     logdir = attr.ib()
+    finetunedir = attr.ib()
 
 def main():
     parser = argparse.ArgumentParser()
