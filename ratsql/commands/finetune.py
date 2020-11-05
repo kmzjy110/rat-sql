@@ -104,7 +104,7 @@ class FineTuner:
 
         kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
         logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
-
+        return stats
     def finetune(self, config, model_load_dir, model_save_dir):
 
 
@@ -124,9 +124,11 @@ class FineTuner:
                     {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
                 last_step = saver.restore(model_load_dir, map_location=self.device)
                 self.logger.log(f"Loaded trained model; last_step:{last_step}")
-
+                val_losses = []
                 for batch in val_data_loader:
-                    self._eval_model(self.logger, self.model, last_step, batch, 'val')
+
+                    stats = self._eval_model(self.logger, self.model, last_step, batch, 'val')
+                    val_losses.append(stats['val: loss'])
                     with self.model_random:
                         loss = self.model.compute_loss(batch)
                         norm_loss = loss/self.finetune_config.num_batch_accumulated
@@ -139,9 +141,10 @@ class FineTuner:
                         lr_scheduler.update_lr(last_step)
                         optimizer.zero_grad()
                     last_step+=1
-                    self.logger.log(f"Stepped with val data. Step:{last_step}")
-                if last_step % self.finetune_config.save_every_n == 0:
-                    saver.save(model_save_dir+'/seed_'+seed, last_step)
+            avg_loss = sum(val_losses)/len(val_losses)
+            self.logger.log(f"Average Loss: {avg_loss}")
+                #if last_step % self.finetune_config.save_every_n == 0:
+                    #saver.save(model_save_dir+'/seed_'+seed, last_step)
     def construct_optimizer_and_lr_scheduler(self, config):
         if config["optimizer"].get("name", None) == 'bertAdamw':
             bert_params = list(self.model.encoder.bert_model.parameters())
