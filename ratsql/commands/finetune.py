@@ -173,6 +173,7 @@ def main(args):
 
     if 'model_name' in config:
         args.finetunedir = os.path.join(args.finetunedir, config['model_name'])
+        args.logdir = os.path.join(args.logdir, config['model_name'])
 
     # Initialize the logger
     reopen_to_flush = config.get('log', {}).get('reopen_to_flush')
