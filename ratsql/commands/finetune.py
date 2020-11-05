@@ -117,7 +117,7 @@ class FineTuner:
                 val_data = self.model_preproc.dataset('val')
                 val_data_loader = torch.utils.data.DataLoader(
                     val_data,
-                    batch_size=self.finetune_config.eval_batch_size,
+                    batch_size=self.finetune_config.batch_size,
                     collate_fn=lambda x: x)
                 optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
                 saver = saver_mod.Saver(
