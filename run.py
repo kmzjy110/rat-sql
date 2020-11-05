@@ -81,7 +81,8 @@ def main():
                                    model_config_args, logdir)
         train.main(train_config)
     elif args.mode == "finetune":
-        fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir)
+        finetunedir = args.finetunedir or exp_config["finetunedir"]
+        fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir,finetunedir)
         finetune.main(fine_tune_config)
 
     elif args.mode == "eval":
