@@ -130,6 +130,7 @@ class FineTuner:
 
                         stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
                                                  self.finetune_config.report_every_n)
+                        print(stats)
 
                         val_losses.append(stats['val: loss'])
                     except KeyError:
