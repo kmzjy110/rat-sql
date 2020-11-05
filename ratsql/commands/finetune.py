@@ -125,6 +125,7 @@ class FineTuner:
                     {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
                 last_step = saver.restore(model_load_dir, map_location=self.device)
                 self.logger.log(f"Loaded trained model; last_step:{last_step}")
+                self.logger.log("MODEL WITH NO GRAD STEPS; PURELY EVAL")
                 val_losses = []
                 for batch in val_data_loader:
                     try:
@@ -134,18 +135,18 @@ class FineTuner:
                         val_losses.append(stats['loss'])
                     except KeyError:
                         self.logger.log("keyError")
-                    else:
-                        with self.model_random:
-                            loss = self.model.compute_loss(batch)
-                            norm_loss = loss/self.finetune_config.num_batch_accumulated
-                            norm_loss.backward()
-
-                            if self.finetune_config.clip_grad:
-                                torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
-                                                               self.finetune_config.clip_grad)
-                            optimizer.step()
-                            lr_scheduler.update_lr(last_step)
-                            optimizer.zero_grad()
+                    # else:
+                    #     with self.model_random:
+                    #         loss = self.model.compute_loss(batch)
+                    #         norm_loss = loss/self.finetune_config.num_batch_accumulated
+                    #         norm_loss.backward()
+                    #
+                    #         if self.finetune_config.clip_grad:
+                    #             torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
+                    #                                            self.finetune_config.clip_grad)
+                    #         optimizer.step()
+                    #         lr_scheduler.update_lr(last_step)
+                    #         optimizer.zero_grad()
                         last_step+=1
             avg_loss = sum(val_losses)/len(val_losses)
             self.logger.log(f"Average Loss: {avg_loss}")
