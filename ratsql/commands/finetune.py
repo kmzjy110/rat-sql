@@ -109,7 +109,8 @@ class FineTuner:
 
 
 
-        random_seeds = [i for i in range(10)]
+        #random_seeds = [i for i in range(10)]
+        random_seeds = [0]
         for seed in random_seeds:
             data_random = random_state.RandomContext(seed)
             print("seed:", seed)
