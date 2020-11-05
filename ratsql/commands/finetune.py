@@ -106,6 +106,43 @@ class FineTuner:
         logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
 
     def finetune(self, config, model_load_dir, model_save_dir):
+
+
+
+        random_seeds = [i for i in range(10)]
+        for seed in random_seeds:
+            data_random = random_state.RandomContext(seed)
+            with data_random:
+
+                val_data = self.model_preproc.dataset('val')
+                val_data_loader = torch.utils.data.DataLoader(
+                    val_data,
+                    batch_size=self.finetune_config.eval_batch_size,
+                    collate_fn=lambda x: x)
+                optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
+                saver = saver_mod.Saver(
+                    {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
+                last_step = saver.restore(model_load_dir, map_location=self.device)
+                self.logger.log("Loaded trained model; last_step:", last_step)
+
+                for batch in val_data_loader:
+                    self._eval_model(self.logger, self.model, last_step, batch, 'val')
+                    with self.model_random:
+                        loss = self.model.compute_loss(batch)
+                        norm_loss = loss/self.finetune_config.num_batch_accumulated
+                        norm_loss.backward()
+
+                        if self.finetune_config.clip_grad:
+                            torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
+                                                           self.finetune_config.clip_grad)
+                        optimizer.step()
+                        lr_scheduler.update_lr(last_step)
+                        optimizer.zero_grad()
+                    last_step+=1
+                    self.logger.log("Stepped with val data. Step:", last_step)
+                if last_step % self.finetune_config.save_every_n == 0:
+                    saver.save(model_save_dir+'/seed_'+seed, last_step)
+    def construct_optimizer_and_lr_scheduler(self, config):
         if config["optimizer"].get("name", None) == 'bertAdamw':
             bert_params = list(self.model.encoder.bert_model.parameters())
             assert len(bert_params) > 0
@@ -126,37 +163,7 @@ class FineTuner:
             lr_scheduler = registry.construct('lr_scheduler',
                                               config.get('lr_scheduler', {'name': 'noop'}),
                                               param_groups=optimizer.param_groups)
-
-        val_data = self.model_preproc.dataset('val')
-        val_data_loader = torch.utils.data.DataLoader(
-            val_data,
-            batch_size=self.finetune_config.eval_batch_size,
-            collate_fn=lambda x: x)
-        random_seeds = [i for i in range(10)]
-        for seed in random_seeds:
-            data_random = random_state.RandomContext(seed)
-            saver = saver_mod.Saver(
-                {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
-            last_step = saver.restore(model_load_dir, map_location=self.device)
-            print("Loaded trained model; last_step:", last_step)
-            with data_random:
-                for batch in val_data_loader:
-                    self._eval_model(self.logger, self.model, last_step, batch, 'val')
-                    with self.model_random:
-                        loss = self.model.compute_loss(batch)
-                        norm_loss = loss/self.finetune_config.num_batch_accumulated
-                        norm_loss.backward()
-
-                        if self.finetune_config.clip_grad:
-                            torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
-                                                           self.finetune_config.clip_grad)
-                        optimizer.step()
-                        lr_scheduler.update_lr(last_step)
-                        optimizer.zero_grad()
-                    last_step+=1
-                if last_step % self.finetune_config.save_every_n == 0:
-                    saver.save(model_save_dir+'/seed_'+seed, last_step)
-
+        return optimizer,lr_scheduler
 
 def main(args):
     if args.config_args:
@@ -165,18 +172,18 @@ def main(args):
         config = json.loads(_jsonnet.evaluate_file(args.config))
 
     if 'model_name' in config:
-        args.logdir = os.path.join(args.logdir, config['model_name'])
+        args.finetunedir = os.path.join(args.finetunedir, config['model_name'])
 
     # Initialize the logger
     reopen_to_flush = config.get('log', {}).get('reopen_to_flush')
     logger = Logger(os.path.join(args.finetunedir, 'finetunelog.txt'), reopen_to_flush)
 
     # Save the config info
-    with open(os.path.join(args.logdir,
+    with open(os.path.join(args.finetunedir,
                            f'config-{datetime.datetime.now().strftime("%Y%m%dT%H%M%S%Z")}.json'), 'w') as f:
         json.dump(config, f, sort_keys=True, indent=4)
 
-    logger.log(f'Logging to {args.logdir}')
+    logger.log(f'Logging to {args.finetunedir}')
 
     # Construct trainer and do training
     finetuner = FineTuner(logger, config)
