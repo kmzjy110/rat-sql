@@ -133,7 +133,7 @@ class FineTuner:
 
                         val_losses.append(stats['val: loss'])
                     except KeyError:
-                        print("keyError")
+                        self.logger.log("keyError")
                     else:
                         with self.model_random:
                             loss = self.model.compute_loss(batch)
