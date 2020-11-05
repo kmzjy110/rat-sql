@@ -132,7 +132,8 @@ class FineTuner:
                                                  self.finetune_config.report_every_n)
                         print(stats)
 
-                        val_losses.append(stats['val: loss'])
+                        val_losses.append(stats['loss'])
+                        print(val_losses)
                     except KeyError:
                         self.logger.log("keyError")
                     else:
