@@ -101,9 +101,9 @@ class FineTuner:
                 stats[k] /= stats['total']
         if 'total' in stats:
             del stats['total']
-        if last_step % report_every_n ==0:
-            kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
-            logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
+        # if last_step % report_every_n ==0:
+        #     kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
+        #     logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
         return stats
     def finetune(self, config, model_load_dir, model_save_dir):
 
