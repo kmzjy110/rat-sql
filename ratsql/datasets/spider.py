@@ -133,7 +133,9 @@ class SpiderDataset(torch.utils.data.Dataset):
         self.schemas, self.eval_foreign_key_maps = load_tables(tables_paths)
 
         for path in paths:
+            print("path:", path)
             raw_data = json.load(open(path))
+            print("raw_data:", raw_data)
             for entry in raw_data:
                 item = SpiderItem(
                     text=entry['question_toks'],
@@ -145,7 +147,7 @@ class SpiderDataset(torch.utils.data.Dataset):
         
         if demo_path:
             self.demos: Dict[str, List] = json.load(open(demo_path))
-            
+        print("schemas:",self.schemas)
         # Backup in-memory copies of all the DBs and create the live connections
         for db_id, schema in tqdm(self.schemas.items(), desc="DB connections"):
             sqlite_path = Path(db_path) / db_id / f"{db_id}.sqlite"
