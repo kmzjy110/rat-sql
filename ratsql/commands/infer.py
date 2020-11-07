@@ -59,7 +59,7 @@ class Inferer:
         with torch.no_grad():
             if args.mode == 'infer':
                 orig_data = registry.construct('dataset', self.config['data'][args.section])
-
+                print("model preproc:", self.model_preproc)
                 preproc_data = self.model_preproc.dataset(args.section)
                 if args.limit:
                     sliced_orig_data = itertools.islice(orig_data, args.limit)
