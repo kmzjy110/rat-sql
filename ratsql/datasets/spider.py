@@ -129,7 +129,7 @@ class SpiderDataset(torch.utils.data.Dataset):
         self.paths = paths
         self.db_path = db_path
         self.examples = []
-
+        print(database)
         self.schemas, self.eval_foreign_key_maps = load_tables(tables_paths)
         for path in paths:
 
