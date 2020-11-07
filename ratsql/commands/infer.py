@@ -61,8 +61,6 @@ class Inferer:
                 orig_data = registry.construct('dataset', self.config['data'][args.section])
 
                 preproc_data = self.model_preproc.dataset(args.section)
-                print("orig_data:", orig_data)
-                print("preproc_data:", preproc_data)
                 if args.limit:
                     sliced_orig_data = itertools.islice(orig_data, args.limit)
                     sliced_preproc_data = itertools.islice(preproc_data, args.limit)
