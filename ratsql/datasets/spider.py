@@ -133,9 +133,8 @@ class SpiderDataset(torch.utils.data.Dataset):
         self.schemas, self.eval_foreign_key_maps = load_tables(tables_paths)
 
         for path in paths:
-            print("path:", path)
+            print(path)
             raw_data = json.load(open(path))
-            print("raw_data:", raw_data)
             for entry in raw_data:
                 item = SpiderItem(
                     text=entry['question_toks'],
