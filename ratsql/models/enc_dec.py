@@ -55,11 +55,23 @@ class EncDecModel(torch.nn.Module):
             self.enc_preproc.load()
             self.dec_preproc.load()
         
-        def dataset(self, section):
-            print("hitting enc_dec dataset")
-            print("enc_preproc:", self.enc_preproc)
-            print("dec_preproc:", self.dec_preproc)
-            return ZippedDataset(self.enc_preproc.dataset(section), self.dec_preproc.dataset(section))
+        def dataset(self, section, database_id=None):
+            if not database_id:
+                return ZippedDataset(self.enc_preproc.dataset(section), self.dec_preproc.dataset(section))
+            else:
+                temp_enc_preproc_dataset = self.enc_preproc.dataset(section)
+                temp_dec_preproc_dataset = self.dec_preproc.dataset(section)
+                assert len(temp_enc_preproc_dataset) == len(temp_dec_preproc_dataset)
+                enc_preproc_dataset = []
+                dec_preproc_dataset = []
+                for i in range(len(temp_enc_preproc_dataset)):
+                    current_item = temp_enc_preproc_dataset[i]
+                    if current_item['db_id'] == database_id:
+                        enc_preproc_dataset.append(temp_enc_preproc_dataset[i])
+                        dec_preproc_dataset.append(temp_dec_preproc_dataset[i])
+                print("current_database_id:", database_id)
+                print("length of queries:", len(enc_preproc_dataset))
+                return ZippedDataset(enc_preproc_dataset, dec_preproc_dataset)
         
     def __init__(self, preproc, device, encoder, decoder):
         super().__init__()

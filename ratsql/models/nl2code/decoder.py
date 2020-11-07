@@ -180,7 +180,6 @@ class NL2CodeDecoderPreproc(abstract_preproc.AbstractPreproc):
         self.rules_mask = grammar['rules_mask']
 
     def dataset(self, section):
-        print("decoder dataset path:", os.path.join(self.data_dir, section + '.jsonl'))
         return [
             NL2CodeDecoderPreprocItem(**json.loads(line))
             for line in open(os.path.join(self.data_dir, section + '.jsonl'))]

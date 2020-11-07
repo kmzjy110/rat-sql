@@ -71,10 +71,6 @@ class NL2CodeEncoder(torch.nn.Module):
             self.vocab = vocab.Vocab.load(self.vocab_path)
 
         def dataset(self, section):
-            print("encoder dataset")
-            print("Paths:")
-            print(os.path.join(self.data_dir, section + '.jsonl'))
-            print("section:",section)
             return [
                 json.loads(line)
                 for line in open(os.path.join(self.data_dir, section + '.jsonl'))]

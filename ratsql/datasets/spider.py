@@ -142,7 +142,8 @@ class SpiderDataset(torch.utils.data.Dataset):
                     orig=entry,
                     orig_schema=self.schemas[entry['db_id']].orig)
                 self.examples.append(item)
-        
+        print("self.examples:")
+        print(self.examples)
         if demo_path:
             self.demos: Dict[str, List] = json.load(open(demo_path))
         # Backup in-memory copies of all the DBs and create the live connections
@@ -154,7 +155,9 @@ class SpiderDataset(torch.utils.data.Dataset):
                 dest.row_factory = sqlite3.Row
                 source.backup(dest)
             schema.connection = dest
-            
+
+    def get_databases(self):
+        return self.schemas.keys()
 
     def __len__(self):
         return len(self.examples)
