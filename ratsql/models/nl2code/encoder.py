@@ -74,6 +74,7 @@ class NL2CodeEncoder(torch.nn.Module):
             print("encoder dataset")
             print("Paths:")
             print(os.path.join(self.data_dir, section + '.jsonl'))
+            print("section:",section)
             return [
                 json.loads(line)
                 for line in open(os.path.join(self.data_dir, section + '.jsonl'))]

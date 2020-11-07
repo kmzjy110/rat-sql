@@ -56,6 +56,9 @@ class EncDecModel(torch.nn.Module):
             self.dec_preproc.load()
         
         def dataset(self, section):
+            print("hitting enc_dec dataset")
+            print("enc_preproc:", self.enc_preproc)
+            print("dec_preproc:", self.dec_preproc)
             return ZippedDataset(self.enc_preproc.dataset(section), self.dec_preproc.dataset(section))
         
     def __init__(self, preproc, device, encoder, decoder):
