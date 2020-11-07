@@ -256,6 +256,7 @@ class SpiderEncoderV2Preproc(abstract_preproc.AbstractPreproc):
         self.vocab_builder.load(self.vocab_word_freq_path)
 
     def dataset(self, section):
+        print("encoder dataset path:", os.path.join(self.data_dir, section + '.jsonl'))
         return [
             json.loads(line)
             for line in open(os.path.join(self.data_dir, section + '.jsonl'))]
