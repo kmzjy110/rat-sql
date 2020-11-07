@@ -59,6 +59,7 @@ class Inferer:
         with torch.no_grad():
             if args.mode == 'infer':
                 orig_data = registry.construct('dataset', self.config['data'][args.section])
+                print("orig_data:", orig_data)
                 print("model preproc:", self.model_preproc)
                 preproc_data = self.model_preproc.dataset(args.section)
                 if args.limit:
