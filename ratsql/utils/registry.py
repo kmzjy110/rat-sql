@@ -37,6 +37,9 @@ def construct(kind, config, unused_keys=(), **kwargs):
 
 
 def instantiate(callable, config, unused_keys=(), **kwargs):
+    print("registry construct instantiate")
+    print("callable:",callable)
+    print("config:", config)
     merged = {**config, **kwargs}
     signature = inspect.signature(callable)
     for name, param in signature.parameters.items():

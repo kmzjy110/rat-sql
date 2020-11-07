@@ -125,7 +125,7 @@ def load_tables(paths):
 
 @registry.register('dataset', 'spider')
 class SpiderDataset(torch.utils.data.Dataset):
-    def __init__(self, paths, tables_paths, db_path, demo_path=None, limit=None):
+    def __init__(self, paths, tables_paths, db_path, demo_path=None, limit=None, database=None):
         self.paths = paths
         self.db_path = db_path
         self.examples = []
@@ -142,12 +142,25 @@ class SpiderDataset(torch.utils.data.Dataset):
                     orig=entry,
                     orig_schema=self.schemas[entry['db_id']].orig)
                 self.examples.append(item)
-        print("self.examples:")
-        print(self.examples[0].schema.db_id)
+
         if demo_path:
             self.demos: Dict[str, List] = json.load(open(demo_path))
         # Backup in-memory copies of all the DBs and create the live connections
-        for db_id, schema in tqdm(self.schemas.items(), desc="DB connections"):
+        if not database:
+            for db_id, schema in tqdm(self.schemas.items(), desc="DB connections"):
+                sqlite_path = Path(db_path) / db_id / f"{db_id}.sqlite"
+                source: sqlite3.Connection
+                with sqlite3.connect(str(sqlite_path)) as source:
+                    dest = sqlite3.connect(':memory:')
+                    dest.row_factory = sqlite3.Row
+                    source.backup(dest)
+                schema.connection = dest
+        else:
+            self.examples = [ex for ex in self.examples if ex.schema.db_id == database]
+            db_id = database
+            schema = self.schemas.get(db_id)
+            if db_id is None or schema is None:
+                raise Exception ("No db_id or schema when there should be one")
             sqlite_path = Path(db_path) / db_id / f"{db_id}.sqlite"
             source: sqlite3.Connection
             with sqlite3.connect(str(sqlite_path)) as source:
