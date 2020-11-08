@@ -179,26 +179,13 @@ class FineTuner:
                         {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
                     last_step = saver.restore(model_load_dir, map_location=self.device)
                     self.logger.log(f"Loaded trained model; last_step:{last_step}")
-
+                    keyerror_flag = False
                     for i, (orig_item, preproc_item) in enumerate(
                             tqdm.tqdm(zip(spider_data, val_data),
                                       total=len(val_data))):
                         try:
                             decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                                       use_heuristic)
-                            infer_output.write(
-                                json.dumps({
-                                    'index': i,
-                                    'beams': decoded,
-                                }) + '\n')
-                            infer_output.flush()
-                            # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
-                            #                          self.finetune_config.report_every_n)
-                            # val_losses.append(stats['loss'])
-                        except KeyError:
-                            self.logger.log("keyError")
-                        else:
-
                             with self.model_random:
                                 loss = self.model.compute_loss(next(val_data_loader))
                                 norm_loss = loss/self.finetune_config.num_batch_accumulated
@@ -210,32 +197,52 @@ class FineTuner:
                                 optimizer.step()
                                 lr_scheduler.update_lr(last_step)
                                 optimizer.zero_grad()
-                            last_step+=1
-                    #EVAL:
+                            infer_output.write(
+                                json.dumps({
+                                    'index': i,
+                                    'beams': decoded,
+                                }) + '\n')
+                            infer_output.flush()
+                            # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
+                            #                          self.finetune_config.report_every_n)
+                            # val_losses.append(stats['loss'])
+                        except KeyError:
+                            self.logger.log("keyError")
+                            keyerror_flag=True
+                            break
+                    if not keyerror_flag:
+                        inferred = open(current_infer_output_path)
+                        metrics = spider_data.Metrics(spider_data)
+                        inferred_lines = list(inferred)
+                        if len(inferred_lines) < len(spider_data):
+                            raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
 
-                    inferred = open(current_infer_output_path)
-                    metrics = spider_data.Metrics(spider_data)
-                    inferred_lines = list(inferred)
-                    if len(inferred_lines) < len(spider_data):
-                        raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
-
-                    for line in inferred_lines:
-                        infer_results = json.loads(line)
-                        if infer_results['beams']:
-                            inferred_code = infer_results['beams'][0]['inferred_code']
-                        else:
-                            inferred_code = None
-                        if 'index' in infer_results:
-                            metrics.add(spider_data[infer_results['index']], inferred_code)
-                        else:
-                            metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
-                    final_metrics = metrics.finalize()
-                    metrics_list.append(final_metrics)
-                    print(final_metrics['total_scores']['all']['exact'])
-                    scores.append(final_metrics['total_scores']['all']['exact'])
+                        for line in inferred_lines:
+                            infer_results = json.loads(line)
+                            if infer_results['beams']:
+                                inferred_code = infer_results['beams'][0]['inferred_code']
+                            else:
+                                inferred_code = None
+                            if 'index' in infer_results:
+                                metrics.add(spider_data[infer_results['index']], inferred_code)
+                            else:
+                                metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
+                        final_metrics = metrics.finalize()
+                        metrics_list.append(final_metrics)
+                        print(final_metrics['total_scores']['all']['exact'])
+                        scores.append((final_metrics['total_scores']['all']['exact'], len(spider_data)))
                 #if last_step % self.finetune_config.save_every_n == 0:
                     #saver.save(model_save_dir+'/seed_'+seed, last_step)
             print('scores',scores)
+            print("average score:", self.aggregate_score(scores))
+
+    def aggregate_score(self, scores):
+        total_num = 0
+        total_score = 0
+        for score, num_datapoint in scores:
+            total_score += score * num_datapoint
+            total_num += num_datapoint
+        return total_score/total_num
     def construct_optimizer_and_lr_scheduler(self, config):
         if config["optimizer"].get("name", None) == 'bertAdamw':
             bert_params = list(self.model.encoder.bert_model.parameters())
