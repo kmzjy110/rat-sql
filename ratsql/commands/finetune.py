@@ -219,7 +219,6 @@ class FineTuner:
                             metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
                     final_metrics = metrics.finalize()
                     self.logger.log(f"database:{database}")
-                    self.logger.log(f"metrics:{final_metrics}")
                     metrics_list.append(final_metrics)
             print("metrics_list:",metrics_list)
                 #if last_step % self.finetune_config.save_every_n == 0:
