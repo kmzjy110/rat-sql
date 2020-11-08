@@ -51,7 +51,7 @@ class FineTuneConfig:
     logdir = attr.ib()
     finetunedir = attr.ib()
     infer_output_path = attr.ib()
-    eval_beam_size = attr.ib()
+    beam_size = attr.ib()
     use_heuristic = attr.ib()
 
 def main():
