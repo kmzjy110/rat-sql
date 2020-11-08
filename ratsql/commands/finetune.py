@@ -163,7 +163,7 @@ class FineTuner:
                     current_infer_output_path = infer_output_path+"/"+database
                     os.makedirs(os.path.dirname(current_infer_output_path), exist_ok=True)
                     infer_output = open(current_infer_output_path, 'w')
-                    print("database:",database)
+
                     spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
                     val_data = self.model_preproc.dataset('val', database=database)
                     val_data_loader = self._yield_batches_from_epochs(torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x:x,
@@ -171,6 +171,7 @@ class FineTuner:
                     assert len(val_data) == len(spider_data)
                     if len(val_data)==0:
                         continue
+                    print("database:", database)
                     #TODO: RANDOMIZE DATA
                     optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
                     saver = saver_mod.Saver(
@@ -210,11 +211,11 @@ class FineTuner:
                                 optimizer.zero_grad()
                             last_step+=1
                     #EVAL:
-                    data = registry.construct('dataset', self.config['data']['val'], database=database)
+
                     inferred = open(current_infer_output_path)
-                    metrics = data.Metrics(data)
+                    metrics = spider_data.Metrics(spider_data)
                     inferred_lines = list(inferred)
-                    if len(inferred_lines) < len(data):
+                    if len(inferred_lines) < len(spider_data):
                         raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
 
                     for line in inferred_lines:
@@ -224,11 +225,11 @@ class FineTuner:
                         else:
                             inferred_code = None
                         if 'index' in infer_results:
-                            metrics.add(data[infer_results['index']], inferred_code)
+                            metrics.add(spider_data[infer_results['index']], inferred_code)
                         else:
                             metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
                     final_metrics = metrics.finalize()
-                    self.logger.log(f"database:{database}")
+                    print(final_metrics)
                     metrics_list.append(final_metrics)
             print("metrics_list:",metrics_list)
                 #if last_step % self.finetune_config.save_every_n == 0:
