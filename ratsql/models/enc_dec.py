@@ -62,17 +62,13 @@ class EncDecModel(torch.nn.Module):
                 temp_enc_preproc_dataset = self.enc_preproc.dataset(section)
                 temp_dec_preproc_dataset = self.dec_preproc.dataset(section)
                 assert len(temp_enc_preproc_dataset) == len(temp_dec_preproc_dataset)
-                print(len(temp_enc_preproc_dataset))
                 enc_preproc_dataset = []
                 dec_preproc_dataset = []
                 for i in range(len(temp_enc_preproc_dataset)):
                     current_item = temp_enc_preproc_dataset[i]
                     if current_item['db_id'] == database:
-                        print("fulfill db id")
                         enc_preproc_dataset.append(temp_enc_preproc_dataset[i])
                         dec_preproc_dataset.append(temp_dec_preproc_dataset[i])
-                print("current_database_id:", database)
-                print("length of data:", len(enc_preproc_dataset))
                 return ZippedDataset(enc_preproc_dataset, dec_preproc_dataset)
         
     def __init__(self, preproc, device, encoder, decoder):
