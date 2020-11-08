@@ -62,10 +62,12 @@ class EncDecModel(torch.nn.Module):
                 temp_enc_preproc_dataset = self.enc_preproc.dataset(section)
                 temp_dec_preproc_dataset = self.dec_preproc.dataset(section)
                 assert len(temp_enc_preproc_dataset) == len(temp_dec_preproc_dataset)
+                print(len(temp_enc_preproc_dataset))
                 enc_preproc_dataset = []
                 dec_preproc_dataset = []
                 for i in range(len(temp_enc_preproc_dataset)):
                     current_item = temp_enc_preproc_dataset[i]
+                    print("current item:", current_item)
                     if current_item['db_id'] == database:
                         enc_preproc_dataset.append(temp_enc_preproc_dataset[i])
                         dec_preproc_dataset.append(temp_dec_preproc_dataset[i])
