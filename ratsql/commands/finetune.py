@@ -145,7 +145,7 @@ class FineTuner:
     def finetune(self, config, model_load_dir, model_save_dir, infer_output_path, beam_size, output_history,
                  use_heuristic):
         #random_seeds = [i for i in range(10)]
-        orig_data = registry.construct('dataset', 'val')
+        orig_data = registry.construct('dataset', self.config['data']['val'])
         databases = orig_data.get_databases()
         random_seeds = [0]
 
