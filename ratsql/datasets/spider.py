@@ -130,6 +130,7 @@ class SpiderDataset(torch.utils.data.Dataset):
         self.db_path = db_path
         self.examples = []
         self.schemas, self.eval_foreign_key_maps = load_tables(tables_paths)
+        self.database=database
         for path in paths:
 
             raw_data = json.load(open(path))
@@ -178,7 +179,12 @@ class SpiderDataset(torch.utils.data.Dataset):
         return self.examples[idx]
     
     def __del__(self):
-        for _, schema in self.schemas.items():
+        if not self.database:
+            for _, schema in self.schemas.items():
+                if schema.connection:
+                    schema.connection.close()
+        else:
+            schema = self.schemas.get(self.database)
             if schema.connection:
                 schema.connection.close()
     
