@@ -161,7 +161,10 @@ class FineTuner:
                     print("database:",database)
                     spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
                     val_data = self.model_preproc.dataset('val', database=database)
+                    val_data_loader = torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x:x)
                     assert len(val_data) == len(spider_data)
+                    if len(val_data)==0:
+                        continue
                     #TODO: RANDOMIZE DATA
                     optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
                     saver = saver_mod.Saver(
@@ -187,8 +190,10 @@ class FineTuner:
                         except KeyError:
                             self.logger.log("keyError")
                         else:
+
                             with self.model_random:
-                                loss = self.model.compute_loss(preproc_item)
+                                current_item = next(val_data_loader)
+                                loss = self.model.compute_loss(current_item)
                                 norm_loss = loss/self.finetune_config.num_batch_accumulated
                                 norm_loss.backward()
 
