@@ -156,6 +156,7 @@ class FineTuner:
             with data_random:
                 for database in databases:
                     current_infer_output_path = infer_output_path+"/"+database
+                    os.makedirs(os.path.dirname(current_infer_output_path), exist_ok=True)
                     infer_output = open(current_infer_output_path, 'w')
                     print("database:",database)
                     spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
@@ -266,8 +267,8 @@ def main(args):
         json.dump(config, f, sort_keys=True, indent=4)
 
     logger.log(f'Logging to {args.finetunedir}')
-
     infer_output_path = args.infer_output_path
+    print("infer_output_path:", args.infer_output_path)
     os.makedirs(os.path.dirname(infer_output_path), exist_ok=True)
     if os.path.exists(infer_output_path):
         print(f'Output file {infer_output_path} already exists')
