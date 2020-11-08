@@ -158,6 +158,7 @@ class FineTuner:
             data_random = random_state.RandomContext(seed)
             print("seed:", seed)
             metrics_list = []
+            scores = []
             with data_random:
                 for database in databases:
                     current_infer_output_path = infer_output_path+"/"+database
@@ -229,11 +230,12 @@ class FineTuner:
                         else:
                             metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
                     final_metrics = metrics.finalize()
-                    print(final_metrics)
                     metrics_list.append(final_metrics)
-            print("metrics_list:",metrics_list)
+                    print(final_metrics['total_scores']['all']['exact'])
+                    scores.append(final_metrics['total_scores']['all']['exact'])
                 #if last_step % self.finetune_config.save_every_n == 0:
                     #saver.save(model_save_dir+'/seed_'+seed, last_step)
+            print('scores',scores)
     def construct_optimizer_and_lr_scheduler(self, config):
         if config["optimizer"].get("name", None) == 'bertAdamw':
             bert_params = list(self.model.encoder.bert_model.parameters())
