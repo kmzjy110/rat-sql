@@ -75,6 +75,7 @@ class FineTuneConfig:
 
 class FineTuner:
     def __init__(self, logger, config):
+        self.config=config
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
         else:
@@ -157,7 +158,7 @@ class FineTuner:
                     current_infer_output_path = infer_output_path+"/"+database
                     infer_output = open(current_infer_output_path, 'w')
                     print("database:",database)
-                    spider_data = registry.construct('dataset', 'val', database =database)
+                    spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
                     val_data = self.model_preproc.dataset('val', database=database)
                     assert len(val_data) == len(spider_data)
                     #TODO: RANDOMIZE DATA
@@ -198,7 +199,7 @@ class FineTuner:
                                 optimizer.zero_grad()
                             last_step+=1
                     #EVAL:
-                    data = registry.construct('dataset', 'val', database=database)
+                    data = registry.construct('dataset', self.config['data']['val'], database=database)
                     inferred = open(current_infer_output_path)
                     metrics = data.Metrics(data)
                     inferred_lines = list(inferred)
@@ -273,7 +274,7 @@ def main(args):
         sys.exit(1)
     # Construct trainer and do training
     beam_size = args.beam_size
-    output_history =args.output_history
+    output_history = args.output_history
     use_heuristic = args.use_heuristic
     finetuner = FineTuner(logger, config)
     finetuner.finetune(config, model_load_dir=args.logdir, model_save_dir=args.finetunedir,
