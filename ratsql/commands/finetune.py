@@ -3,11 +3,12 @@ import collections
 import datetime
 import json
 import os
+import sys
 
 import _jsonnet
 import attr
 import torch
-
+import tqdm
 # These imports are needed for registry.lookup
 # noinspection PyUnresolvedReferences
 from ratsql import ast_util
@@ -19,6 +20,8 @@ from ratsql import grammars
 from ratsql import models
 # noinspection PyUnresolvedReferences
 from ratsql import optimizers
+# noinspection PyUnresolvedReferences
+from ratsql import beam_search
 
 from ratsql.utils import registry
 from ratsql.utils import random_state
@@ -27,12 +30,21 @@ from ratsql.utils import saver as saver_mod
 # noinspection PyUnresolvedReferences
 from ratsql.utils import vocab
 from ratsql.commands.train import Logger
+
+from ratsql.models.spider import spider_beam_search
 def add_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--logdir', required=True)
     parser.add_argument('--finetunedir', required=True)
     parser.add_argument('--config', required=True)
     parser.add_argument('--config-args')
+    parser.add_argument('--infer-output-path', required=True)
+
+    parser.add_argument('--beam-size', required=True, type=int)
+    parser.add_argument('--output-history', action='store_true')
+
+    parser.add_argument('--use_heuristic', action='store_true')
+
     args = parser.parse_args()
     return args
 
@@ -105,52 +117,109 @@ class FineTuner:
         #     kv_stats = ", ".join(f"{k} = {v}" for k, v in stats.items())
         #     logger.log(f"Step {last_step} stats, {eval_section}: {kv_stats}")
         return stats
-    def finetune(self, config, model_load_dir, model_save_dir):
 
+    def _infer_one(self, model, data_item, preproc_item, beam_size, output_history=False, use_heuristic=True):
+        if use_heuristic:
+            # TODO: from_cond should be true from non-bert model
+            beams = spider_beam_search.beam_search_with_heuristics(
+                model, data_item, preproc_item, beam_size=beam_size, max_steps=1000, from_cond=False)
+        else:
+            beams = beam_search.beam_search(
+                model, data_item, preproc_item, beam_size=beam_size, max_steps=1000)
+        decoded = []
+        for beam in beams:
+            model_output, inferred_code = beam.inference_state.finalize()
 
+            decoded.append({
+                'orig_question': data_item.orig["question"],
+                'model_output': model_output,
+                'inferred_code': inferred_code,
+                'score': beam.score,
+                **({
+                       'choice_history': beam.choice_history,
+                       'score_history': beam.score_history,
+                   } if output_history else {})})
+        return decoded
 
+    def finetune(self, config, model_load_dir, model_save_dir, infer_output_path, beam_size, output_history,
+                 use_heuristic):
         #random_seeds = [i for i in range(10)]
+        orig_data = registry.construct('dataset', 'val')
+        databases = orig_data.get_databases()
         random_seeds = [0]
+
         for seed in random_seeds:
             data_random = random_state.RandomContext(seed)
             print("seed:", seed)
+            metrics_list = []
             with data_random:
+                for database in databases:
+                    current_infer_output_path = infer_output_path+"/"+database
+                    infer_output = open(current_infer_output_path, 'w')
+                    print("database:",database)
+                    spider_data = registry.construct('dataset', 'val', database =database)
+                    val_data = self.model_preproc.dataset('val', database=database)
+                    assert len(val_data) == len(spider_data)
+                    #TODO: RANDOMIZE DATA
+                    optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
+                    saver = saver_mod.Saver(
+                        {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
+                    last_step = saver.restore(model_load_dir, map_location=self.device)
+                    self.logger.log(f"Loaded trained model; last_step:{last_step}")
 
-                val_data = self.model_preproc.dataset('val')
-                val_data_loader = torch.utils.data.DataLoader(
-                    val_data,
-                    batch_size=self.finetune_config.batch_size,
-                    collate_fn=lambda x: x)
-                optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
-                saver = saver_mod.Saver(
-                    {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
-                last_step = saver.restore(model_load_dir, map_location=self.device)
-                self.logger.log(f"Loaded trained model; last_step:{last_step}")
-                self.logger.log("MODEL WITH NO GRAD STEPS; PURELY EVAL")
-                val_losses = []
-                for batch in val_data_loader:
-                    try:
+                    for i, (orig_item, preproc_item) in enumerate(
+                            tqdm.tqdm(zip(spider_data, val_data),
+                                      total=len(val_data))):
+                        try:
+                            decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
+                                                      use_heuristic)
+                            infer_output.write(
+                                json.dumps({
+                                    'index': i,
+                                    'beams': decoded,
+                                }) + '\n')
+                            infer_output.flush()
+                            # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
+                            #                          self.finetune_config.report_every_n)
+                            # val_losses.append(stats['loss'])
+                        except KeyError:
+                            self.logger.log("keyError")
+                        else:
+                            with self.model_random:
+                                loss = self.model.compute_loss(preproc_item)
+                                norm_loss = loss/self.finetune_config.num_batch_accumulated
+                                norm_loss.backward()
 
-                        stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
-                                                 self.finetune_config.report_every_n)
-                        val_losses.append(stats['loss'])
-                    except KeyError:
-                        self.logger.log("keyError")
-                    # else:
-                    #     with self.model_random:
-                    #         loss = self.model.compute_loss(batch)
-                    #         norm_loss = loss/self.finetune_config.num_batch_accumulated
-                    #         norm_loss.backward()
-                    #
-                    #         if self.finetune_config.clip_grad:
-                    #             torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
-                    #                                            self.finetune_config.clip_grad)
-                    #         optimizer.step()
-                    #         lr_scheduler.update_lr(last_step)
-                    #         optimizer.zero_grad()
-                        last_step+=1
-            avg_loss = sum(val_losses)/len(val_losses)
-            self.logger.log(f"Average Loss: {avg_loss}")
+                                if self.finetune_config.clip_grad:
+                                    torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
+                                                                   self.finetune_config.clip_grad)
+                                optimizer.step()
+                                lr_scheduler.update_lr(last_step)
+                                optimizer.zero_grad()
+                            last_step+=1
+                    #EVAL:
+                    data = registry.construct('dataset', 'val', database=database)
+                    inferred = open(current_infer_output_path)
+                    metrics = data.Metrics(data)
+                    inferred_lines = list(inferred)
+                    if len(inferred_lines) < len(data):
+                        raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
+
+                    for line in inferred_lines:
+                        infer_results = json.loads(line)
+                        if infer_results['beams']:
+                            inferred_code = infer_results['beams'][0]['inferred_code']
+                        else:
+                            inferred_code = None
+                        if 'index' in infer_results:
+                            metrics.add(data[infer_results['index']], inferred_code)
+                        else:
+                            metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
+                    final_metrics = metrics.finalize()
+                    self.logger.log(f"database:{database}")
+                    self.logger.log(f"metrics:{final_metrics}")
+                    metrics_list.append(final_metrics)
+            print("metrics_list:",metrics_list)
                 #if last_step % self.finetune_config.save_every_n == 0:
                     #saver.save(model_save_dir+'/seed_'+seed, last_step)
     def construct_optimizer_and_lr_scheduler(self, config):
@@ -197,9 +266,19 @@ def main(args):
 
     logger.log(f'Logging to {args.finetunedir}')
 
+    infer_output_path = args.infer_output_path
+    os.makedirs(os.path.dirname(infer_output_path), exist_ok=True)
+    if os.path.exists(infer_output_path):
+        print(f'Output file {infer_output_path} already exists')
+        sys.exit(1)
     # Construct trainer and do training
+    beam_size = args.beam_size
+    output_history =args.output_history
+    use_heuristic = args.use_heuristic
     finetuner = FineTuner(logger, config)
-    finetuner.finetune(config, model_load_dir=args.logdir, model_save_dir=args.finetunedir)
+    finetuner.finetune(config, model_load_dir=args.logdir, model_save_dir=args.finetunedir,
+                       infer_output_path=infer_output_path, beam_size = beam_size, output_history=output_history,
+                       use_heuristic=use_heuristic)
 
 if __name__ == '__main__':
     args = add_parser()

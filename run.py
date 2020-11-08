@@ -83,7 +83,12 @@ def main():
         train.main(train_config)
     elif args.mode == "finetune":
         finetunedir = exp_config["finetunedir"]
-        fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir,finetunedir)
+        infer_output_path = f"{exp_config['finetunedir']}/infer/{exp_config['eval_name']}-step{step}.infer"
+        fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir,finetunedir,
+                                          infer_output_path,
+                                          exp_config["eval_beam_size"],
+                                          use_heuristic=exp_config["eval_use_heuristic"]
+                                          )
         finetune.main(fine_tune_config)
 
     elif args.mode == "eval":
