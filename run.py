@@ -53,6 +53,7 @@ class FineTuneConfig:
     infer_output_path = attr.ib()
     beam_size = attr.ib()
     use_heuristic = attr.ib()
+    output_history = attr.ib(default=False)
 
 def main():
     parser = argparse.ArgumentParser()
