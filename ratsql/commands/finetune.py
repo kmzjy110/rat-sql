@@ -142,6 +142,11 @@ class FineTuner:
                    } if output_history else {})})
         return decoded
 
+    @staticmethod
+    def _yield_batches_from_epochs(loader):
+        while True:
+            for batch in loader:
+                yield batch
     def finetune(self, config, model_load_dir, model_save_dir, infer_output_path, beam_size, output_history,
                  use_heuristic):
         #random_seeds = [i for i in range(10)]
@@ -161,7 +166,8 @@ class FineTuner:
                     print("database:",database)
                     spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
                     val_data = self.model_preproc.dataset('val', database=database)
-                    val_data_loader = torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x:x)
+                    val_data_loader = self._yield_batches_from_epochs(torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x:x,
+                                                                  shuffle=False))
                     assert len(val_data) == len(spider_data)
                     if len(val_data)==0:
                         continue
@@ -192,8 +198,7 @@ class FineTuner:
                         else:
 
                             with self.model_random:
-                                current_item = next(val_data_loader)
-                                loss = self.model.compute_loss(current_item)
+                                loss = self.model.compute_loss(next(val_data_loader))
                                 norm_loss = loss/self.finetune_config.num_batch_accumulated
                                 norm_loss.backward()
 
