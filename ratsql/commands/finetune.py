@@ -148,6 +148,7 @@ class FineTuner:
         while True:
             for batch in loader:
                 yield batch
+
     def finetune(self, config, model_load_dir, model_save_dir, infer_output_path, beam_size, output_history,
                  use_heuristic):
         #random_seeds = [i for i in range(10)]
@@ -179,6 +180,10 @@ class FineTuner:
 
         spider_data = registry.construct('dataset', self.config['data']['val'], database=database)
         val_data = self.model_preproc.dataset('val', database=database)
+
+        zipped_data = ZippedDataset(spider_data, val_data)
+        data_loader = torch.utils.data.DataLoader(zipped_data, batch_size = 1, collate_fn=lambda x:x, shuffle=True)
+
         val_data_loader = self._yield_batches_from_epochs(
             torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x: x,
                                         shuffle=False))
@@ -221,8 +226,12 @@ class FineTuner:
                 # val_losses.append(stats['loss'])
             except KeyError:
                 self.logger.log("keyError")
-                keyerror_flag = True
-                break
+
+                if database:
+                    keyerror_flag = True
+                    break
+                else:
+                    continue
         if not keyerror_flag:
             inferred = open(current_infer_output_path)
             metrics = spider_data.Metrics(spider_data)
