@@ -9,6 +9,7 @@ import _jsonnet
 import attr
 import torch
 import tqdm
+import numpy as np
 # These imports are needed for registry.lookup
 # noinspection PyUnresolvedReferences
 from ratsql import ast_util
@@ -181,8 +182,8 @@ class FineTuner:
         spider_data = registry.construct('dataset', self.config['data']['val'], database=database)
         val_data = self.model_preproc.dataset('val', database=database)
 
-        zipped_data = ZippedDataset(spider_data, val_data)
-        data_loader = torch.utils.data.DataLoader(zipped_data, batch_size = 1, collate_fn=lambda x:x, shuffle=True)
+
+
 
         val_data_loader = self._yield_batches_from_epochs(
             torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x: x,
@@ -190,6 +191,7 @@ class FineTuner:
         assert len(val_data) == len(spider_data)
         if len(val_data) == 0:
             return
+        indices = np.random.permutation(len(val_data))
         print("database:", database)
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
@@ -198,10 +200,8 @@ class FineTuner:
         last_step = saver.restore(model_load_dir, map_location=self.device)
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
         keyerror_flag = False
-        # for i, (orig_item, preproc_item) in enumerate(
-        #         tqdm.tqdm(zip(spider_data, val_data),
-        #                   total=len(val_data))):
-        for i, (orig_item, preproc_item) in enumerate(tqdm.tqdm(data_loader)):
+        for i in tqdm.tqdm(indices):
+            orig_item, preproc_item = spider_data[i], val_data[i]
             try:
                 decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                           use_heuristic)
@@ -212,7 +212,7 @@ class FineTuner:
                     }) + '\n')
                 infer_output.flush()
                 with self.model_random:
-                    
+
                     loss = self.model.compute_loss(preproc_item)
                     norm_loss = loss / self.finetune_config.num_batch_accumulated
                     norm_loss.backward()
