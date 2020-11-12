@@ -191,7 +191,7 @@ class FineTuner:
         assert len(val_data) == len(spider_data)
         if len(val_data) == 0:
             return
-        indices = np.random.permutation(len(val_data))
+        indices = list(range(len(spider_data)))
         print("database:", database)
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
@@ -202,9 +202,9 @@ class FineTuner:
         keyerror_flag = False
         for i in tqdm.tqdm(indices):
             orig_item, preproc_item = spider_data[i], [val_data[i]]
-            
-            for item in val_data[i]:
-                print("val_data_item")
+
+            for item in preproc_item[0]:
+                print("preproc_item")
                 print(item)
             print("yield_from_batch[0][0]:",next(val_data_loader)[0][0])
             print("yield_from_batch[0][1]:", next(val_data_loader)[0][1])
