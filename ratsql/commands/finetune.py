@@ -202,7 +202,10 @@ class FineTuner:
         keyerror_flag = False
         for i in tqdm.tqdm(indices):
             orig_item, preproc_item = spider_data[i], [val_data[i]]
-            print("val_data:",val_data[i])
+            
+            for item in val_data[i]:
+                print("val_data_item")
+                print(item)
             print("yield_from_batch[0][0]:",next(val_data_loader)[0][0])
             print("yield_from_batch[0][1]:", next(val_data_loader)[0][1])
             try:
