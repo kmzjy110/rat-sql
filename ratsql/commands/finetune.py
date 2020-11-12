@@ -201,13 +201,11 @@ class FineTuner:
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
         keyerror_flag = False
         for i in tqdm.tqdm(indices):
-            orig_item, preproc_item = spider_data[i], [val_data[i]]
-
-            for item in preproc_item[0]:
-                print("preproc_item")
-                print(item)
-            print("yield_from_batch[0][0]:",next(val_data_loader)[0][0])
-            print("yield_from_batch[0][1]:", next(val_data_loader)[0][1])
+            orig_item, preproc_item = spider_data[i], val_data[i]
+            print("preproc_item:",preproc_item)
+            print("listed_preproc_item：", list(preproc_item) )
+            print("len(preproc_item)", len(preproc_item))
+            print("len(listed_preproc_item)", len(list(preproc_item)))
             try:
                 decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                           use_heuristic)
