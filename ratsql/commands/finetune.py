@@ -161,81 +161,93 @@ class FineTuner:
             scores = []
             with data_random:
                 for database in databases:
-                    current_infer_output_path = infer_output_path+"/"+database
-                    os.makedirs(os.path.dirname(current_infer_output_path), exist_ok=True)
-                    infer_output = open(current_infer_output_path, 'w')
+                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                                              beam_size, output_history, use_heuristic, metrics_list, scores)
+                print("Score on entire validation set:")
+                self.finetune_on_database(infer_output_path, None, config, model_load_dir,
+                                          beam_size, output_history, use_heuristic, metrics_list, scores)
+                
+    def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
+                             use_heuristic, metrics_list, scores):
+        if database:
+            current_infer_output_path = infer_output_path + "/" + database
+        else:
+            current_infer_output_path = infer_output_path+"/"+"entire_val"
+        os.makedirs(os.path.dirname(current_infer_output_path), exist_ok=True)
+        infer_output = open(current_infer_output_path, 'w')
 
-                    spider_data = registry.construct('dataset',  self.config['data']['val'], database =database)
-                    val_data = self.model_preproc.dataset('val', database=database)
-                    val_data_loader = self._yield_batches_from_epochs(torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x:x,
-                                                                  shuffle=False))
-                    assert len(val_data) == len(spider_data)
-                    if len(val_data)==0:
-                        continue
-                    print("database:", database)
-                    #TODO: RANDOMIZE DATA
-                    optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
-                    saver = saver_mod.Saver(
-                        {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
-                    last_step = saver.restore(model_load_dir, map_location=self.device)
-                    self.logger.log(f"Loaded trained model; last_step:{last_step}")
-                    keyerror_flag = False
-                    for i, (orig_item, preproc_item) in enumerate(
-                            tqdm.tqdm(zip(spider_data, val_data),
-                                      total=len(val_data))):
-                        try:
-                            decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
-                                                      use_heuristic)
-                            with self.model_random:
-                                loss = self.model.compute_loss(next(val_data_loader))
-                                norm_loss = loss/self.finetune_config.num_batch_accumulated
-                                norm_loss.backward()
+        spider_data = registry.construct('dataset', self.config['data']['val'], database=database)
+        val_data = self.model_preproc.dataset('val', database=database)
+        val_data_loader = self._yield_batches_from_epochs(
+            torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x: x,
+                                        shuffle=False))
+        assert len(val_data) == len(spider_data)
+        if len(val_data) == 0:
+            return
+        print("database:", database)
+        # TODO: RANDOMIZE DATA
+        optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
+        saver = saver_mod.Saver(
+            {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
+        last_step = saver.restore(model_load_dir, map_location=self.device)
+        self.logger.log(f"Loaded trained model; last_step:{last_step}")
+        keyerror_flag = False
+        for i, (orig_item, preproc_item) in enumerate(
+                tqdm.tqdm(zip(spider_data, val_data),
+                          total=len(val_data))):
+            try:
+                decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
+                                          use_heuristic)
+                with self.model_random:
+                    loss = self.model.compute_loss(next(val_data_loader))
+                    norm_loss = loss / self.finetune_config.num_batch_accumulated
+                    norm_loss.backward()
 
-                                if self.finetune_config.clip_grad:
-                                    torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
-                                                                   self.finetune_config.clip_grad)
-                                optimizer.step()
-                                lr_scheduler.update_lr(last_step)
-                                optimizer.zero_grad()
-                            infer_output.write(
-                                json.dumps({
-                                    'index': i,
-                                    'beams': decoded,
-                                }) + '\n')
-                            infer_output.flush()
-                            # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
-                            #                          self.finetune_config.report_every_n)
-                            # val_losses.append(stats['loss'])
-                        except KeyError:
-                            self.logger.log("keyError")
-                            keyerror_flag=True
-                            break
-                    if not keyerror_flag:
-                        inferred = open(current_infer_output_path)
-                        metrics = spider_data.Metrics(spider_data)
-                        inferred_lines = list(inferred)
-                        if len(inferred_lines) < len(spider_data):
-                            raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
+                    if self.finetune_config.clip_grad:
+                        torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
+                                                       self.finetune_config.clip_grad)
+                    optimizer.step()
+                    lr_scheduler.update_lr(last_step)
+                    optimizer.zero_grad()
+                infer_output.write(
+                    json.dumps({
+                        'index': i,
+                        'beams': decoded,
+                    }) + '\n')
+                infer_output.flush()
+                # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
+                #                          self.finetune_config.report_every_n)
+                # val_losses.append(stats['loss'])
+            except KeyError:
+                self.logger.log("keyError")
+                keyerror_flag = True
+                break
+        if not keyerror_flag:
+            inferred = open(current_infer_output_path)
+            metrics = spider_data.Metrics(spider_data)
+            inferred_lines = list(inferred)
+            if len(inferred_lines) < len(spider_data):
+                raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
 
-                        for line in inferred_lines:
-                            infer_results = json.loads(line)
-                            if infer_results['beams']:
-                                inferred_code = infer_results['beams'][0]['inferred_code']
-                            else:
-                                inferred_code = None
-                            if 'index' in infer_results:
-                                metrics.add(spider_data[infer_results['index']], inferred_code)
-                            else:
-                                metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
-                        final_metrics = metrics.finalize()
-                        metrics_list.append(final_metrics)
-                        print(final_metrics['total_scores']['all']['exact'])
-                        scores.append((final_metrics['total_scores']['all']['exact'], len(spider_data)))
-                #if last_step % self.finetune_config.save_every_n == 0:
-                    #saver.save(model_save_dir+'/seed_'+seed, last_step)
-            print('scores',scores)
-            print("average score:", self.aggregate_score(scores))
+            for line in inferred_lines:
+                infer_results = json.loads(line)
+                if infer_results['beams']:
+                    inferred_code = infer_results['beams'][0]['inferred_code']
+                else:
+                    inferred_code = None
+                if 'index' in infer_results:
+                    metrics.add(spider_data[infer_results['index']], inferred_code)
+                else:
+                    metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
+            final_metrics = metrics.finalize()
+            metrics_list.append(final_metrics)
+            print(final_metrics['total_scores']['all']['exact'])
+            scores.append((database, final_metrics['total_scores']['all']['exact'], len(spider_data)))
+        # if last_step % self.finetune_config.save_every_n == 0:
+        # saver.save(model_save_dir+'/seed_'+seed, last_step)
 
+        print('scores', scores)
+        print("average score:", self.aggregate_score(scores))
     def aggregate_score(self, scores):
         total_num = 0
         total_score = 0
