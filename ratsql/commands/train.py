@@ -133,7 +133,7 @@ class Trainer:
                                                   config.get('lr_scheduler', {'name': 'noop'}),
                                                   param_groups=optimizer.param_groups)
         print("optimizer:", optimizer)
-        print("lr_scheduler:," lr_scheduler)
+        print("lr_scheduler:", lr_scheduler)
         # 2. Restore model parameters
         saver = saver_mod.Saver(
             {"model": self.model, "optimizer": optimizer}, keep_every_n=self.train_config.keep_every_n)
