@@ -198,14 +198,15 @@ class FineTuner:
         for i in tqdm.tqdm(indices):
             orig_item, preproc_item = spider_data[i], val_data[i]
             try:
-                decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
-                                          use_heuristic)
-                infer_output.write(
-                    json.dumps({
-                        'index': int(i),
-                        'beams': decoded,
-                    }) + '\n')
-                infer_output.flush()
+                with torch.no_grad():
+                    decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
+                                              use_heuristic)
+                    infer_output.write(
+                        json.dumps({
+                            'index': int(i),
+                            'beams': decoded,
+                        }) + '\n')
+                    infer_output.flush()
                 with self.model_random:
 
                     loss = self.model.compute_loss([preproc_item])
