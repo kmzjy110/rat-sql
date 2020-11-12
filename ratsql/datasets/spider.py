@@ -179,14 +179,15 @@ class SpiderDataset(torch.utils.data.Dataset):
         return self.examples[idx]
     
     def __del__(self):
-        if not self.database:
-            for _, schema in self.schemas.items():
-                if schema.connection:
-                    schema.connection.close()
-        else:
-            schema = self.schemas.get(self.database)
-            if schema.connection:
-                schema.connection.close()
+        pass
+        # if not self.database:
+        #     for _, schema in self.schemas.items():
+        #         if schema.connection:
+        #             schema.connection.close()
+        # else:
+        #     schema = self.schemas.get(self.database)
+        #     if schema.connection:
+        #         schema.connection.close()
     
     class Metrics:
         def __init__(self, dataset):

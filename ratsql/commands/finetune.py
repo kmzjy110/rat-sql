@@ -32,6 +32,7 @@ from ratsql.utils import vocab
 from ratsql.commands.train import Logger
 
 from ratsql.models.spider import spider_beam_search
+from ratsql.models.enc_dec import ZippedDataset
 def add_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--logdir', required=True)
@@ -160,9 +161,9 @@ class FineTuner:
             metrics_list = []
             scores = []
             with data_random:
-                for database in databases:
-                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, scores)
+                # for database in databases:
+                #     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                #                               beam_size, output_history, use_heuristic, metrics_list, scores)
                 print("Score on entire validation set:")
                 self.finetune_on_database(infer_output_path, None, config, model_load_dir,
                                           beam_size, output_history, use_heuristic, metrics_list, scores)
