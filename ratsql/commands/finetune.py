@@ -162,9 +162,9 @@ class FineTuner:
             metrics_list = []
             scores = []
             with data_random:
-                # for database in databases:
-                #     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                #                               beam_size, output_history, use_heuristic, metrics_list, scores)
+                for database in databases:
+                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                                              beam_size, output_history, use_heuristic, metrics_list, scores)
                 print("Score on entire validation set:")
                 self.finetune_on_database(infer_output_path, None, config, model_load_dir,
                                           beam_size, output_history, use_heuristic, metrics_list, scores)
@@ -198,9 +198,10 @@ class FineTuner:
         last_step = saver.restore(model_load_dir, map_location=self.device)
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
         keyerror_flag = False
-        for i, (orig_item, preproc_item) in enumerate(
-                tqdm.tqdm(zip(spider_data, val_data),
-                          total=len(val_data))):
+        # for i, (orig_item, preproc_item) in enumerate(
+        #         tqdm.tqdm(zip(spider_data, val_data),
+        #                   total=len(val_data))):
+        for i, (orig_item, preproc_item) in enumerate(tqdm.tqdm(data_loader)):
             try:
                 decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                           use_heuristic)
@@ -211,7 +212,8 @@ class FineTuner:
                     }) + '\n')
                 infer_output.flush()
                 with self.model_random:
-                    loss = self.model.compute_loss(next(val_data_loader))
+                    
+                    loss = self.model.compute_loss(preproc_item)
                     norm_loss = loss / self.finetune_config.num_batch_accumulated
                     norm_loss.backward()
 
@@ -237,8 +239,8 @@ class FineTuner:
             inferred = open(current_infer_output_path)
             metrics = spider_data.Metrics(spider_data)
             inferred_lines = list(inferred)
-            # if len(inferred_lines) < len(spider_data):
-            #     raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(spider_data)}')
+            if len(inferred_lines) < len(spider_data):
+                raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(spider_data)}')
 
             for line in inferred_lines:
                 infer_results = json.loads(line)
