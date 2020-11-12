@@ -155,7 +155,7 @@ class FineTuner:
         #random_seeds = [i for i in range(10)]
         orig_data = registry.construct('dataset', self.config['data']['val'])
         databases = orig_data.get_databases()
-        random_seeds = [0]
+        random_seeds = [0, 1]
 
         for seed in random_seeds:
             data_random = random_state.RandomContext(seed)
@@ -195,7 +195,6 @@ class FineTuner:
             {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
         last_step = saver.restore(model_load_dir, map_location=self.device)
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
-        keyerror_flag = False
         for i in tqdm.tqdm(indices):
             orig_item, preproc_item = spider_data[i], val_data[i]
             try:
@@ -225,33 +224,27 @@ class FineTuner:
                 # val_losses.append(stats['loss'])
             except KeyError:
                 self.logger.log("keyError")
-                print("keyerror")
-                if database:
-                    keyerror_flag = True
-                    break
-                else:
-                    continue
-        if not keyerror_flag:
-            inferred = open(current_infer_output_path)
-            metrics = spider_data.Metrics(spider_data)
-            inferred_lines = list(inferred)
-            if len(inferred_lines) < len(spider_data):
-                raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(spider_data)}')
+                continue
+        inferred = open(current_infer_output_path)
+        metrics = spider_data.Metrics(spider_data)
+        inferred_lines = list(inferred)
+        if len(inferred_lines) < len(spider_data):
+            raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(spider_data)}')
 
-            for line in inferred_lines:
-                infer_results = json.loads(line)
-                if infer_results['beams']:
-                    inferred_code = infer_results['beams'][0]['inferred_code']
-                else:
-                    inferred_code = None
-                if 'index' in infer_results:
-                    metrics.add(spider_data[infer_results['index']], inferred_code)
-                else:
-                    metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
-            final_metrics = metrics.finalize()
-            metrics_list.append(final_metrics)
-            print(final_metrics['total_scores']['all']['exact'])
-            scores.append((database, final_metrics['total_scores']['all']['exact'], len(spider_data)))
+        for line in inferred_lines:
+            infer_results = json.loads(line)
+            if infer_results['beams']:
+                inferred_code = infer_results['beams'][0]['inferred_code']
+            else:
+                inferred_code = None
+            if 'index' in infer_results:
+                metrics.add(spider_data[infer_results['index']], inferred_code)
+            else:
+                metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
+        final_metrics = metrics.finalize()
+        metrics_list.append(final_metrics)
+        print(final_metrics['total_scores']['all']['exact'])
+        scores.append((database, final_metrics['total_scores']['all']['exact'], len(spider_data)))
         # if last_step % self.finetune_config.save_every_n == 0:
         # saver.save(model_save_dir+'/seed_'+seed, last_step)
 
