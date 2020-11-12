@@ -207,7 +207,7 @@ class FineTuner:
                                           use_heuristic)
                 infer_output.write(
                     json.dumps({
-                        'index': i,
+                        'index': int(i),
                         'beams': decoded,
                     }) + '\n')
                 infer_output.flush()
