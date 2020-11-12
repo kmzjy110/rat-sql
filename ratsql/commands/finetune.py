@@ -181,17 +181,13 @@ class FineTuner:
 
         spider_data = registry.construct('dataset', self.config['data']['val'], database=database)
         val_data = self.model_preproc.dataset('val', database=database)
-
-
-
-
-        val_data_loader = self._yield_batches_from_epochs(
-            torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x: x,
-                                        shuffle=False))
+        # val_data_loader = self._yield_batches_from_epochs(
+        #     torch.utils.data.DataLoader(val_data, batch_size=1, collate_fn=lambda x: x,
+        #                                 shuffle=False))
         assert len(val_data) == len(spider_data)
         if len(val_data) == 0:
             return
-        indices = list(range(len(spider_data)))
+        indices = np.random.permutation(len(val_data))
         print("database:", database)
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
@@ -202,10 +198,6 @@ class FineTuner:
         keyerror_flag = False
         for i in tqdm.tqdm(indices):
             orig_item, preproc_item = spider_data[i], val_data[i]
-            print("preproc_item:",preproc_item)
-            print("listed_preproc_item：", list(preproc_item) )
-            print("len(preproc_item)", len(preproc_item))
-            print("len(listed_preproc_item)", len(list(preproc_item)))
             try:
                 decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                           use_heuristic)
@@ -217,7 +209,7 @@ class FineTuner:
                 infer_output.flush()
                 with self.model_random:
 
-                    loss = self.model.compute_loss(preproc_item)
+                    loss = self.model.compute_loss([preproc_item])
                     norm_loss = loss / self.finetune_config.num_batch_accumulated
                     norm_loss.backward()
 
