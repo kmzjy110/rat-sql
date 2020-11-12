@@ -166,7 +166,7 @@ class FineTuner:
                 print("Score on entire validation set:")
                 self.finetune_on_database(infer_output_path, None, config, model_load_dir,
                                           beam_size, output_history, use_heuristic, metrics_list, scores)
-                
+
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
                              use_heuristic, metrics_list, scores):
         if database:
@@ -251,7 +251,7 @@ class FineTuner:
     def aggregate_score(self, scores):
         total_num = 0
         total_score = 0
-        for score, num_datapoint in scores:
+        for _, score, num_datapoint in scores:
             total_score += score * num_datapoint
             total_num += num_datapoint
         return total_score/total_num
