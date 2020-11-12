@@ -226,7 +226,7 @@ class FineTuner:
                 # val_losses.append(stats['loss'])
             except KeyError:
                 self.logger.log("keyError")
-
+                print("keyerror")
                 if database:
                     keyerror_flag = True
                     break
@@ -236,8 +236,8 @@ class FineTuner:
             inferred = open(current_infer_output_path)
             metrics = spider_data.Metrics(spider_data)
             inferred_lines = list(inferred)
-            if len(inferred_lines) < len(spider_data):
-                raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(data)}')
+            # if len(inferred_lines) < len(spider_data):
+            #     raise Exception(f'Not enough inferred: {len(inferred_lines)} vs {len(spider_data)}')
 
             for line in inferred_lines:
                 infer_results = json.loads(line)
