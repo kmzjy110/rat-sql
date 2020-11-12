@@ -279,6 +279,8 @@ class FineTuner:
             lr_scheduler = registry.construct('lr_scheduler',
                                               config.get('lr_scheduler', {'name': 'noop'}),
                                               param_groups=optimizer.param_groups)
+        print("optimizer:", optimizer)
+        print("lr_scheduler:", lr_scheduler)
         return optimizer,lr_scheduler
 
 def main(args):
