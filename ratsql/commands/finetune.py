@@ -53,7 +53,6 @@ def add_parser():
 
 @attr.s
 class FineTuneConfig:
-    eval_every_n = attr.ib(default=100)
     report_every_n = attr.ib(default=10)
     save_every_n = attr.ib(default=100)
     keep_every_n = attr.ib(default=1000)
@@ -165,13 +164,13 @@ class FineTuner:
             with data_random:
                 for database in databases:
                     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, scores)
+                                              beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
                 print("Score on entire validation set:")
                 self.finetune_on_database(infer_output_path, None, config, model_load_dir,
-                                          beam_size, output_history, use_heuristic, metrics_list, scores)
+                                          beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
 
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
-                             use_heuristic, metrics_list, scores):
+                             use_heuristic, metrics_list, scores, take_grad_steps=True):
         if database:
             current_infer_output_path = infer_output_path + "/" + database
         else:
@@ -207,18 +206,19 @@ class FineTuner:
                             'beams': decoded,
                         }) + '\n')
                     infer_output.flush()
-                with self.model_random:
+                if take_grad_steps:
+                    with self.model_random:
 
-                    loss = self.model.compute_loss([preproc_item])
-                    norm_loss = loss / self.finetune_config.num_batch_accumulated
-                    norm_loss.backward()
+                        loss = self.model.compute_loss([preproc_item])
+                        norm_loss = loss / self.finetune_config.num_batch_accumulated
+                        norm_loss.backward()
 
-                    if self.finetune_config.clip_grad:
-                        torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
-                                                       self.finetune_config.clip_grad)
-                    optimizer.step()
-                    lr_scheduler.update_lr(last_step)
-                    optimizer.zero_grad()
+                        if self.finetune_config.clip_grad:
+                            torch.nn.utils.clip_grad_norm_(optimizer.bert_param_group["params"], \
+                                                           self.finetune_config.clip_grad)
+                        optimizer.step()
+                        lr_scheduler.update_lr(last_step)
+                        optimizer.zero_grad()
 
                 # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
                 #                          self.finetune_config.report_every_n)
