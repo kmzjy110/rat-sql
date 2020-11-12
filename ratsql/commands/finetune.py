@@ -204,6 +204,12 @@ class FineTuner:
             try:
                 decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
                                           use_heuristic)
+                infer_output.write(
+                    json.dumps({
+                        'index': i,
+                        'beams': decoded,
+                    }) + '\n')
+                infer_output.flush()
                 with self.model_random:
                     loss = self.model.compute_loss(next(val_data_loader))
                     norm_loss = loss / self.finetune_config.num_batch_accumulated
@@ -215,12 +221,7 @@ class FineTuner:
                     optimizer.step()
                     lr_scheduler.update_lr(last_step)
                     optimizer.zero_grad()
-                infer_output.write(
-                    json.dumps({
-                        'index': i,
-                        'beams': decoded,
-                    }) + '\n')
-                infer_output.flush()
+
                 # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
                 #                          self.finetune_config.report_every_n)
                 # val_losses.append(stats['loss'])
