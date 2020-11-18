@@ -164,13 +164,13 @@ class FineTuner:
             with data_random:
                 for database in databases:
                     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
-                print("Score on entire validation set:")
-                self.finetune_on_database(infer_output_path, None, config, model_load_dir,
-                                          beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
+                                              beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False, batch_size="32")
+                # print("Score on entire validation set:")
+                # self.finetune_on_database(infer_output_path, None, config, model_load_dir,
+                #                           beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
 
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
-                             use_heuristic, metrics_list, scores, take_grad_steps=True):
+                             use_heuristic, metrics_list, scores, take_grad_steps=True, batch_size="1"):
         if database:
             current_infer_output_path = infer_output_path + "/" + database
         else:
@@ -186,15 +186,21 @@ class FineTuner:
         assert len(val_data) == len(spider_data)
         if len(val_data) == 0:
             return
+        if batch_size=="32":
+            if len(val_data)<32:
+                return
         indices = np.random.permutation(len(val_data))
         print("database:", database)
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
+        print("optimizer", optimizer)
         saver = saver_mod.Saver(
             {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
         last_step = saver.restore(model_load_dir, map_location=self.device)
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
-        for i in tqdm.tqdm(indices):
+        current_batch = []
+        clear_batch=False
+        for current_number, i in tqdm.tqdm(enumerate(indices)):
             orig_item, preproc_item = spider_data[i], val_data[i]
             try:
                 with torch.no_grad():
@@ -207,9 +213,20 @@ class FineTuner:
                         }) + '\n')
                     infer_output.flush()
                 if take_grad_steps:
+                    if batch_size =="1":
+                        current_batch = [preproc_item]
+                    elif batch_size =="32":
+                        if current_number %32 !=0:
+                            current_batch.append(preproc_item)
+                            clear_batch = False
+                            continue
+                        else:
+                            clear_batch = True
+                    else:
+                        current_batch.append(preproc_item)
                     with self.model_random:
 
-                        loss = self.model.compute_loss([preproc_item])
+                        loss = self.model.compute_loss(current_batch)
                         norm_loss = loss / self.finetune_config.num_batch_accumulated
                         norm_loss.backward()
 
@@ -219,6 +236,8 @@ class FineTuner:
                         optimizer.step()
                         lr_scheduler.update_lr(last_step)
                         optimizer.zero_grad()
+                    if clear_batch:
+                        current_batch = []
 
                 # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
                 #                          self.finetune_config.report_every_n)
@@ -279,8 +298,6 @@ class FineTuner:
             lr_scheduler = registry.construct('lr_scheduler',
                                               config.get('lr_scheduler', {'name': 'noop'}),
                                               param_groups=optimizer.param_groups)
-        print("optimizer:", optimizer)
-        print("lr_scheduler:", lr_scheduler)
         return optimizer,lr_scheduler
 
 def main(args):
