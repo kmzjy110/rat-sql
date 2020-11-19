@@ -373,10 +373,11 @@ def main(args):
     logger.log(f'Logging to {args.finetunedir}')
     infer_output_path = args.infer_output_path
     print("infer_output_path:", args.infer_output_path)
-    os.makedirs(os.path.dirname(infer_output_path), exist_ok=True)
+
     if os.path.exists(infer_output_path):
         print(f'Output file {infer_output_path} already exists')
         sys.exit(1)
+    os.makedirs(os.path.dirname(infer_output_path), exist_ok=True)
     # Construct trainer and do training
     beam_size = args.beam_size
     output_history = args.output_history
