@@ -165,17 +165,33 @@ class FineTuner:
             batch_32_scores = []
             n_2_scores = []
             with data_random:
-                print("No grad")
-                no_grad_infer_output_path = infer_output_path + "no_grad/no_grad.infer"
-                os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=False)
-                print(no_grad_infer_output_path)
-                for database in databases:
-
-                    self.finetune_on_database(no_grad_infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
-                                              take_grad_steps=False, batch_size="1")
-                print("No grad scores", no_grad_scores)
-                print("average", self.aggregate_score(no_grad_scores))
+                # print("No grad")
+                # no_grad_infer_output_path = infer_output_path + "no_grad/no_grad.infer"
+                # os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=False)
+                # print(no_grad_infer_output_path)
+                # for database in databases:
+                #
+                #     self.finetune_on_database(no_grad_infer_output_path, database, config, model_load_dir,
+                #                               beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
+                #                               take_grad_steps=False, batch_size="1")
+                # print("No grad scores", no_grad_scores)
+                # print("average", self.aggregate_score(no_grad_scores))
+                no_grad_scores = [('dog_kennels', 0.5, 82), ('flight_2', 0.5875, 80),
+                                  ('pets_1', 0.4523809523809524, 42),
+                                  ('concert_singer', 0.5333333333333333, 45),
+                                  ('museum_visit', 0.4444444444444444, 18),
+                                  ('battle_death', 0.5625, 16),
+                                  ('student_transcripts_tracking', 0.48717948717948717, 78),
+                                  ('singer', 0.7333333333333333, 30),
+                                  ('cre_Doc_Template_Mgt', 0.7023809523809523, 84),
+                                  ('world_1', 0.19166666666666668, 120),
+                                  ('employee_hire_evaluation', 0.8421052631578947, 38),
+                                  ('network_1', 0.6428571428571429, 56),
+                                  ('poker_player', 0.875, 40), ('real_estate_properties', 0.25, 4),
+                                  ('course_teach', 0.7333333333333333, 30),
+                                  ('voter_1', 0.4666666666666667, 15), ('wta_1', 0.5, 62),
+                                  ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
+                                  ('tvshow', 0.6612903225806451, 62)]
                 print("batch size 1")
                 batch_1_infer_output_path = infer_output_path + "batch_1/batch_1.infer"
                 os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=False)
