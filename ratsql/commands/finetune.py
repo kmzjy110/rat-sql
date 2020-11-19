@@ -184,6 +184,7 @@ class FineTuner:
                                               beam_size, output_history, use_heuristic, metrics_list, batch_1_scores,
                                               take_grad_steps=True, batch_size="1")
                 print("batch size 1 scores", batch_1_scores)
+                print("average", self.aggregate_score(batch_1_scores))
                 print("batch size 32")
                 batch_32_infer_output_path = infer_output_path + "batch_32/batch_32.infer"
                 os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=False)
@@ -193,6 +194,7 @@ class FineTuner:
                                               beam_size, output_history, use_heuristic, metrics_list, batch_32_scores,
                                               take_grad_steps=True, batch_size="32")
                 print("batch size 32 scores", batch_32_scores)
+                print("average", self.aggregate_score(batch_32_scores))
                 print("n^2")
                 n_2_infer_output_path = infer_output_path + "n_2/n_2.infer"
                 os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=False)
@@ -202,6 +204,7 @@ class FineTuner:
                                               beam_size, output_history, use_heuristic, metrics_list, n_2_scores,
                                               take_grad_steps=True, batch_size="n^2")
                 print("n^2 scores", n_2_scores)
+                print("average", self.aggregate_score(n_2_scores))
                 # print("Score on entire validation set:")
                 # self.finetune_on_database(infer_output_path, None, config, model_load_dir,
                 #                           beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
