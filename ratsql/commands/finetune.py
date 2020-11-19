@@ -166,7 +166,7 @@ class FineTuner:
             n_2_scores = []
             with data_random:
                 print("No grad")
-                no_grad_infer_output_path = infer_output_path + "no_grad.infer"
+                no_grad_infer_output_path = infer_output_path + "no_grad/no_grad.infer"
                 os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=False)
                 print(no_grad_infer_output_path)
                 for database in databases:
