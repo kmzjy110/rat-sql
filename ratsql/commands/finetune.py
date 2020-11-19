@@ -192,6 +192,8 @@ class FineTuner:
                                   ('voter_1', 0.4666666666666667, 15), ('wta_1', 0.5, 62),
                                   ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
                                   ('tvshow', 0.6612903225806451, 62)]
+                print("No grad scores", no_grad_scores)
+                print("average", self.aggregate_score(no_grad_scores))
                 print("batch size 1")
                 batch_1_infer_output_path = infer_output_path + "batch_1/batch_1.infer"
                 os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=False)
