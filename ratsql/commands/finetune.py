@@ -165,19 +165,19 @@ class FineTuner:
             batch_32_scores = []
             n_2_scores = []
             with data_random:
-                print("No grad")
-                for database in databases:
-
-                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
-                                              take_grad_steps=False, batch_size="1")
-                print("No grad scores", no_grad_scores)
-                print("batch size 1")
-                for database in databases:
-                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, batch_1_scores,
-                                              take_grad_steps=True, batch_size="1")
-                print("batch size 1 scores", batch_1_scores)
+                # print("No grad")
+                # for database in databases:
+                #
+                #     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                #                               beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
+                #                               take_grad_steps=False, batch_size="1")
+                # print("No grad scores", no_grad_scores)
+                # print("batch size 1")
+                # for database in databases:
+                #     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                #                               beam_size, output_history, use_heuristic, metrics_list, batch_1_scores,
+                #                               take_grad_steps=True, batch_size="1")
+                # print("batch size 1 scores", batch_1_scores)
                 print("batch size 32")
                 for database in databases:
                     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
@@ -254,7 +254,7 @@ class FineTuner:
                     if batch_size =="1":
                         current_batch = [preproc_item]
                     elif batch_size =="32":
-                        if current_number %32 !=0:
+                        if current_number %32 !=0 or current_number ==0:
                             current_batch.append(preproc_item)
                             clear_batch = False
                             continue
