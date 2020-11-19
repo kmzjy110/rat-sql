@@ -167,7 +167,7 @@ class FineTuner:
             with data_random:
                 print("No grad")
                 no_grad_infer_output_path = infer_output_path + "no_grad.infer"
-                os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=True)
+                os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=False)
                 print(no_grad_infer_output_path)
                 for database in databases:
 
@@ -177,7 +177,7 @@ class FineTuner:
                 print("No grad scores", no_grad_scores)
                 print("batch size 1")
                 batch_1_infer_output_path = infer_output_path + "batch_1.infer"
-                os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=True)
+                os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=False)
                 print(batch_1_infer_output_path)
                 for database in databases:
                     self.finetune_on_database(batch_1_infer_output_path, database, config, model_load_dir,
@@ -186,7 +186,7 @@ class FineTuner:
                 print("batch size 1 scores", batch_1_scores)
                 print("batch size 32")
                 batch_32_infer_output_path = infer_output_path + "batch_32.infer"
-                os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=True)
+                os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=False)
                 print(batch_32_infer_output_path)
                 for database in databases:
                     self.finetune_on_database(batch_32_infer_output_path, database, config, model_load_dir,
@@ -195,7 +195,7 @@ class FineTuner:
                 print("batch size 32 scores", batch_32_scores)
                 print("n^2")
                 n_2_infer_output_path = infer_output_path + "n_2.infer"
-                os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=True)
+                os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=False)
                 print(n_2_infer_output_path)
                 for database in databases:
                     self.finetune_on_database(n_2_infer_output_path, database, config, model_load_dir,
@@ -250,7 +250,9 @@ class FineTuner:
         self.logger.log(f"Loaded trained model; last_step:{last_step}")
         current_batch = []
         clear_batch=False
-        for current_number, i in tqdm.tqdm(enumerate(indices)):
+        current_number = 0
+        for i in tqdm.tqdm(indices):
+            current_number +=1
             orig_item, preproc_item = spider_data[i], val_data[i]
             try:
                 with torch.no_grad():
@@ -262,11 +264,12 @@ class FineTuner:
                             'beams': decoded,
                         }) + '\n')
                     infer_output.flush()
+
                 if take_grad_steps:
                     if batch_size =="1":
                         current_batch = [preproc_item]
                     elif batch_size =="32":
-                        if current_number %32 !=0 or current_number ==0:
+                        if current_number %32 !=0:
                             current_batch.append(preproc_item)
                             clear_batch = False
                             continue
@@ -295,9 +298,9 @@ class FineTuner:
             except KeyError:
                 self.logger.log("keyError")
                 continue
-            except AssertionError:
-                self.logger.log("AssertionError")
-                continue
+            # except AssertionError:
+            #     self.logger.log("AssertionError")
+            #     continue
         inferred = open(current_infer_output_path)
         metrics = spider_data.Metrics(spider_data)
         inferred_lines = list(inferred)
