@@ -89,7 +89,7 @@ def main():
         finetunedir = exp_config["finetunedir"]
         #TODO: FIX STEPS TO MAKE IT INTO CONFIG FILE
         step = exp_config['eval_steps'][-1]
-        infer_output_path = f"{exp_config['finetunedir']}/infer/{exp_config['eval_name']}-step{step}.infer"
+        infer_output_path = f"{exp_config['finetunedir']}/infer/"
         fine_tune_config = FineTuneConfig(model_config_file, model_config_args, logdir,finetunedir,
                                           infer_output_path,
                                           exp_config["eval_beam_size"],
