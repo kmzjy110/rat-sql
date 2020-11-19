@@ -166,7 +166,7 @@ class FineTuner:
             n_2_scores = []
             with data_random:
                 print("No grad")
-                no_grad_infer_output_path = infer_output_path + "/no_grad.infer"
+                no_grad_infer_output_path = infer_output_path + "no_grad.infer"
                 os.makedirs(os.path.dirname(no_grad_infer_output_path), exist_ok=True)
                 print(no_grad_infer_output_path)
                 for database in databases:
@@ -176,7 +176,7 @@ class FineTuner:
                                               take_grad_steps=False, batch_size="1")
                 print("No grad scores", no_grad_scores)
                 print("batch size 1")
-                batch_1_infer_output_path = infer_output_path + "/batch_1.infer"
+                batch_1_infer_output_path = infer_output_path + "batch_1.infer"
                 os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=True)
                 print(batch_1_infer_output_path)
                 for database in databases:
@@ -185,7 +185,7 @@ class FineTuner:
                                               take_grad_steps=True, batch_size="1")
                 print("batch size 1 scores", batch_1_scores)
                 print("batch size 32")
-                batch_32_infer_output_path = infer_output_path + "/batch_32.infer"
+                batch_32_infer_output_path = infer_output_path + "batch_32.infer"
                 os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=True)
                 print(batch_32_infer_output_path)
                 for database in databases:
@@ -194,7 +194,7 @@ class FineTuner:
                                               take_grad_steps=True, batch_size="32")
                 print("batch size 32 scores", batch_32_scores)
                 print("n^2")
-                n_2_infer_output_path = infer_output_path + "/n_2.infer"
+                n_2_infer_output_path = infer_output_path + "n_2.infer"
                 os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=True)
                 print(n_2_infer_output_path)
                 for database in databases:
