@@ -295,6 +295,9 @@ class FineTuner:
             except KeyError:
                 self.logger.log("keyError")
                 continue
+            except AssertionError:
+                self.logger.log("AssertionError")
+                continue
         inferred = open(current_infer_output_path)
         metrics = spider_data.Metrics(spider_data)
         inferred_lines = list(inferred)
