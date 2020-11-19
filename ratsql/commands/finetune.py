@@ -160,15 +160,54 @@ class FineTuner:
             data_random = random_state.RandomContext(seed)
             print("seed:", seed)
             metrics_list = []
-            scores = []
+            batch_1_scores = []
+            no_grad_scores = []
+            batch_32_scores = []
+            n_2_scores = []
             with data_random:
+                print("No grad")
+                for database in databases:
+
+                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                                              beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
+                                              take_grad_steps=False, batch_size="1")
+                print("No grad scores", no_grad_scores)
+                print("batch size 1")
                 for database in databases:
                     self.finetune_on_database(infer_output_path, database, config, model_load_dir,
-                                              beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False, batch_size="32")
+                                              beam_size, output_history, use_heuristic, metrics_list, batch_1_scores,
+                                              take_grad_steps=True, batch_size="1")
+                print("batch size 1 scores", batch_1_scores)
+                print("batch size 32")
+                for database in databases:
+                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                                              beam_size, output_history, use_heuristic, metrics_list, batch_32_scores,
+                                              take_grad_steps=True, batch_size="32")
+                print("batch size 32 scores", batch_32_scores)
+                print("n^2")
+                for database in databases:
+                    self.finetune_on_database(infer_output_path, database, config, model_load_dir,
+                                              beam_size, output_history, use_heuristic, metrics_list, n_2_scores,
+                                              take_grad_steps=True, batch_size="n^2")
+                print("n^2 scores", n_2_scores)
                 # print("Score on entire validation set:")
                 # self.finetune_on_database(infer_output_path, None, config, model_load_dir,
                 #                           beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
-
+                print("")
+                print("changes")
+                print("batch size 1 changes")
+                print(self.get_change(no_grad_scores, batch_1_scores))
+                print("batch size 32 changes")
+                print(self.get_change(no_grad_scores, batch_32_scores))
+                print("batch size n^2 changes")
+                print(self.get_change(no_grad_scores, n_2_scores))
+    def get_change(self, no_grad_scores, new_scores):
+        results = []
+        for no_grad_score in no_grad_scores:
+            for new_score in new_scores:
+                if no_grad_score[0] == new_score[0]:
+                    results.append((no_grad_score[0], new_score[1]-no_grad_score[1]))
+        return results
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
                              use_heuristic, metrics_list, scores, take_grad_steps=True, batch_size="1"):
         if database:
@@ -193,7 +232,6 @@ class FineTuner:
         print("database:", database)
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
-        print("optimizer", optimizer)
         saver = saver_mod.Saver(
             {"model": self.model, "optimizer": optimizer}, keep_every_n=self.finetune_config.keep_every_n)
         last_step = saver.restore(model_load_dir, map_location=self.device)
@@ -263,13 +301,14 @@ class FineTuner:
                 metrics.add(None, inferred_code, obsolete_gold_code=infer_results['gold_code'])
         final_metrics = metrics.finalize()
         metrics_list.append(final_metrics)
-        print(final_metrics['total_scores']['all']['exact'])
+        #print(final_metrics['total_scores']['all']['exact'])
         scores.append((database, final_metrics['total_scores']['all']['exact'], len(spider_data)))
         # if last_step % self.finetune_config.save_every_n == 0:
         # saver.save(model_save_dir+'/seed_'+seed, last_step)
 
-        print('scores', scores)
-        print("average score:", self.aggregate_score(scores))
+        #print('scores', scores)
+        #print("average score:", self.aggregate_score(scores))
+        return scores
     def aggregate_score(self, scores):
         total_num = 0
         total_score = 0
