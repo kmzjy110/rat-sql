@@ -154,7 +154,7 @@ class FineTuner:
         #random_seeds = [i for i in range(10)]
         orig_data = registry.construct('dataset', self.config['data']['val'])
         databases = orig_data.get_databases()
-        random_seeds = [0, 1]
+        random_seeds = [0]
 
         for seed in random_seeds:
             data_random = random_state.RandomContext(seed)
@@ -175,6 +175,7 @@ class FineTuner:
                                               beam_size, output_history, use_heuristic, metrics_list, no_grad_scores,
                                               take_grad_steps=False, batch_size="1")
                 print("No grad scores", no_grad_scores)
+                print("average", self.aggregate_score(no_grad_scores))
                 print("batch size 1")
                 batch_1_infer_output_path = infer_output_path + "batch_1/batch_1.infer"
                 os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=False)
@@ -257,29 +258,30 @@ class FineTuner:
         for i in tqdm.tqdm(indices):
             current_number +=1
             orig_item, preproc_item = spider_data[i], val_data[i]
-            try:
-                with torch.no_grad():
-                    decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
-                                              use_heuristic)
-                    infer_output.write(
-                        json.dumps({
-                            'index': int(i),
-                            'beams': decoded,
-                        }) + '\n')
-                    infer_output.flush()
 
-                if take_grad_steps:
-                    if batch_size =="1":
-                        current_batch = [preproc_item]
-                    elif batch_size =="32":
-                        if current_number %32 !=0:
-                            current_batch.append(preproc_item)
-                            clear_batch = False
-                            continue
-                        else:
-                            clear_batch = True
-                    else:
+            with torch.no_grad():
+                decoded = self._infer_one(self.model, orig_item, preproc_item, beam_size, output_history,
+                                          use_heuristic)
+                infer_output.write(
+                    json.dumps({
+                        'index': int(i),
+                        'beams': decoded,
+                    }) + '\n')
+                infer_output.flush()
+
+            if take_grad_steps:
+                if batch_size =="1":
+                    current_batch = [preproc_item]
+                elif batch_size =="32":
+                    if current_number %32 !=0:
                         current_batch.append(preproc_item)
+                        clear_batch = False
+                        continue
+                    else:
+                        clear_batch = True
+                else:
+                    current_batch.append(preproc_item)
+                try:
                     with self.model_random:
 
                         loss = self.model.compute_loss(current_batch)
@@ -298,9 +300,10 @@ class FineTuner:
                 # stats = self._eval_model(self.logger, self.model, last_step, batch, 'val',
                 #                          self.finetune_config.report_every_n)
                 # val_losses.append(stats['loss'])
-            except KeyError:
-                self.logger.log("keyError")
-                continue
+                except KeyError:
+                    self.logger.log("keyError")
+                    current_batch = []
+                    continue
             # except AssertionError:
             #     self.logger.log("AssertionError")
             #     continue
