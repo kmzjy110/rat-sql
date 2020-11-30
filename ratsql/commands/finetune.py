@@ -203,9 +203,9 @@ class FineTuner:
                 plt.xticks(x_pos,x)
                 plt.show()
                 plt.savefig('no_grad_scores.png')
-                x = x[0]
-                y = y[0]
-                x_pos = x_pos[0]
+                x = x[:1]
+                y = y[:1]
+                x_pos = x_pos[:1]
                 plt.bar(x_pos, y)
                 plt.xlabel('database')
                 plt.ylabel('score change')
