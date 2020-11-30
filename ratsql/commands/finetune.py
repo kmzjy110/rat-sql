@@ -152,10 +152,9 @@ class FineTuner:
 
     def finetune(self, config, model_load_dir, model_save_dir, infer_output_path, beam_size, output_history,
                  use_heuristic):
-        #random_seeds = [i for i in range(10)]
+        random_seeds = [i for i in range(3)]
         orig_data = registry.construct('dataset', self.config['data']['val'])
         databases = orig_data.get_databases()
-        random_seeds = [0]
 
         for seed in random_seeds:
             data_random = random_state.RandomContext(seed)
@@ -193,9 +192,8 @@ class FineTuner:
                                   ('voter_1', 0.4666666666666667, 15), ('wta_1', 0.5, 62),
                                   ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
                                   ('tvshow', 0.6612903225806451, 62)]
-
-                self.plot(no_grad_scores, "no_grad_scores.png")
-                self.plot([no_grad_scores[0]], 'no_grad_scores_1.png')
+                no_grad_scores.append(("average", self.aggregate_score(no_grad_scores)))
+                self.plot(no_grad_scores, "no_grad_scores.png", "no grad scores")
                 print("No grad scores", no_grad_scores)
                 print("average", self.aggregate_score(no_grad_scores))
                 print("batch size 1")
@@ -206,8 +204,12 @@ class FineTuner:
                     self.finetune_on_database(batch_1_infer_output_path, database, config, model_load_dir,
                                               beam_size, output_history, use_heuristic, metrics_list, batch_1_scores,
                                               take_grad_steps=True, batch_size="1")
+
+                batch_1_scores.append(("average", self.aggregate_score(batch_1_scores)))
+                self.plot(batch_1_scores, "batch_1_scores_seed_"+str(seed)+".png", "batch size 1 scores seed "+ str(seed))
                 print("batch size 1 scores", batch_1_scores)
                 print("average", self.aggregate_score(batch_1_scores))
+
                 print("batch size 32")
                 batch_32_infer_output_path = infer_output_path + "batch_32/batch_32.infer"
                 os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=False)
@@ -216,8 +218,11 @@ class FineTuner:
                     self.finetune_on_database(batch_32_infer_output_path, database, config, model_load_dir,
                                               beam_size, output_history, use_heuristic, metrics_list, batch_32_scores,
                                               take_grad_steps=True, batch_size="32")
+                batch_32_scores.append(("average", self.aggregate_score(batch_32_scores)))
+                self.plot(batch_32_scores, "batch_32_scores_seed_"+str(seed)+".png", "batch size 32 scores seed " + str(seed))
                 print("batch size 32 scores", batch_32_scores)
                 print("average", self.aggregate_score(batch_32_scores))
+
                 print("n^2")
                 n_2_infer_output_path = infer_output_path + "n_2/n_2.infer"
                 os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=False)
@@ -226,6 +231,8 @@ class FineTuner:
                     self.finetune_on_database(n_2_infer_output_path, database, config, model_load_dir,
                                               beam_size, output_history, use_heuristic, metrics_list, n_2_scores,
                                               take_grad_steps=True, batch_size="n^2")
+                n_2_scores.append(("average", self.aggregate_score(n_2_scores)))
+                self.plot(n_2_scores, "n_2_scores_seed_"+str(seed)+".png", "batch n^2 scores seed " + str(seed))
                 print("n^2 scores", n_2_scores)
                 print("average", self.aggregate_score(n_2_scores))
                 # print("Score on entire validation set:")
@@ -233,14 +240,26 @@ class FineTuner:
                 #                           beam_size, output_history, use_heuristic, metrics_list, scores, take_grad_steps=False)
                 print("")
                 print("changes")
+
                 print("batch size 1 changes")
+                self.plot(self.get_change(no_grad_scores, batch_1_scores),
+                          "batch_size_1_changes_seed_"+str(seed)+".png",
+                          "batch size 1 score changes")
                 print(self.get_change(no_grad_scores, batch_1_scores))
+
                 print("batch size 32 changes")
+                self.plot(self.get_change(no_grad_scores, batch_32_scores),
+                          "batch_size_32_changes_seed_" + str(seed) + ".png",
+                          "batch size 32 score changes")
                 print(self.get_change(no_grad_scores, batch_32_scores))
+
                 print("batch size n^2 changes")
+                self.plot(self.get_change(no_grad_scores, n_2_scores),
+                          "batch_size_n_2_changes_seed_" + str(seed) + ".png",
+                          "batch size n^2 score changes")
                 print(self.get_change(no_grad_scores, n_2_scores))
 
-    def plot(self, scores, filename):
+    def plot(self, scores, filename, title='scores'):
         plt.figure()
 
         x = [item[0] for item in scores]
@@ -248,7 +267,7 @@ class FineTuner:
         x_pos = [i for i, _ in enumerate(x)]
         plt.bar(x_pos, y)
         plt.xlabel('database')
-        plt.ylabel('score change')
+        plt.ylabel(title)
         plt.xticks(x_pos, x, rotation=90)
         plt.tight_layout()
         plt.show()
