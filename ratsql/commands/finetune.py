@@ -199,7 +199,7 @@ class FineTuner:
                 print("average", average)
 
                 print("batch size 1")
-                batch_1_infer_output_path = infer_output_path + "batch_1/batch_1.infer"
+                batch_1_infer_output_path = infer_output_path + "seed_"+str(seed)+"/batch_1/batch_1.infer"
                 os.makedirs(os.path.dirname(batch_1_infer_output_path), exist_ok=False)
                 print(batch_1_infer_output_path)
                 for database in databases:
@@ -213,7 +213,7 @@ class FineTuner:
                 print("average", average)
 
                 print("batch size 32")
-                batch_32_infer_output_path = infer_output_path + "batch_32/batch_32.infer"
+                batch_32_infer_output_path = infer_output_path + "seed_"+str(seed)+"/batch_32/batch_32.infer"
                 os.makedirs(os.path.dirname(batch_32_infer_output_path), exist_ok=False)
                 print(batch_32_infer_output_path)
                 for database in databases:
@@ -227,7 +227,7 @@ class FineTuner:
                 print("average",average)
 
                 print("n^2")
-                n_2_infer_output_path = infer_output_path + "n_2/n_2.infer"
+                n_2_infer_output_path = infer_output_path + "seed_"+str(seed)+"/n_2/n_2.infer"
                 os.makedirs(os.path.dirname(n_2_infer_output_path), exist_ok=False)
                 print(n_2_infer_output_path)
                 for database in databases:
