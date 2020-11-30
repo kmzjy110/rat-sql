@@ -242,6 +242,7 @@ class FineTuner:
 
     def plot(self, scores, filename):
         plt.figure()
+
         x = [item[0] for item in scores]
         y = [item[1] for item in scores]
         x_pos = [i for i, _ in enumerate(x)]
@@ -249,7 +250,7 @@ class FineTuner:
         plt.xlabel('database')
         plt.ylabel('score change')
         plt.xticks(x_pos, x, rotation=90)
-        plt.subplots_adjust(bottom=0.4, top=0.99)
+        plt.tight_layout()
         plt.show()
         plt.savefig(filename)
 
