@@ -194,26 +194,8 @@ class FineTuner:
                                   ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
                                   ('tvshow', 0.6612903225806451, 62)]
 
-                x = [item[0] for item in no_grad_scores]
-                y = [item[1] for item in no_grad_scores]
-                x_pos = [i for i, _ in enumerate(x)]
-                fig1, ax1 = plt.subplots()
-                fig1.bar(x_pos, y)
-                fig1.xlabel('database')
-                fig1.ylabel('score change')
-                plt.xticks(x_pos,x, rotation='vertical')
-                plt.show()
-                plt.savefig('no_grad_scores.png')
-                plt.figure()
-                x = x[:1]
-                y = y[:1]
-                x_pos = x_pos[:1]
-                plt.bar(x_pos, y)
-                plt.xlabel('database')
-                plt.ylabel('score change')
-                plt.xticks(x_pos, x)
-                plt.show()
-                plt.savefig('no_grad_scores_1.png')
+                self.plot(no_grad_scores, "no_grad_scores.png")
+                self.plot([no_grad_scores[0]], 'no_grad_scores_1.png')
                 print("No grad scores", no_grad_scores)
                 print("average", self.aggregate_score(no_grad_scores))
                 print("batch size 1")
@@ -257,6 +239,19 @@ class FineTuner:
                 print(self.get_change(no_grad_scores, batch_32_scores))
                 print("batch size n^2 changes")
                 print(self.get_change(no_grad_scores, n_2_scores))
+
+    def plot(self, scores, filename):
+        plt.figure()
+        x = [item[0] for item in scores]
+        y = [item[1] for item in scores]
+        x_pos = [i for i, _ in enumerate(x)]
+        plt.bar(x_pos, y)
+        plt.xlabel('database')
+        plt.ylabel('score change')
+        plt.xticks(x_pos, x, rotation='vertical')
+        plt.show()
+        plt.savefig(filename)
+
     def get_change(self, no_grad_scores, new_scores):
         results = []
         for no_grad_score in no_grad_scores:
