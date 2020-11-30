@@ -248,7 +248,8 @@ class FineTuner:
         plt.bar(x_pos, y)
         plt.xlabel('database')
         plt.ylabel('score change')
-        plt.xticks(x_pos, x, rotation='vertical')
+        plt.xticks(x_pos, x, rotation=90)
+        plt.subplots_adjust(bottom=0.4, top=0.99)
         plt.show()
         plt.savefig(filename)
 
