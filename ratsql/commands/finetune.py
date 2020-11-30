@@ -197,12 +197,14 @@ class FineTuner:
                 x = [item[0] for item in no_grad_scores]
                 y = [item[1] for item in no_grad_scores]
                 x_pos = [i for i, _ in enumerate(x)]
-                plt.bar(x_pos, y)
-                plt.xlabel('database')
-                plt.ylabel('score change')
-                plt.xticks(x_pos,x)
+                fig1, ax1 = plt.subplots()
+                fig1.bar(x_pos, y)
+                fig1.xlabel('database')
+                fig1.ylabel('score change')
+                plt.xticks(x_pos,x, rotation='vertical')
                 plt.show()
                 plt.savefig('no_grad_scores.png')
+                plt.figure()
                 x = x[:1]
                 y = y[:1]
                 x_pos = x_pos[:1]
