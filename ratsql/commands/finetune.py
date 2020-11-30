@@ -10,6 +10,7 @@ import attr
 import torch
 import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
 # These imports are needed for registry.lookup
 # noinspection PyUnresolvedReferences
 from ratsql import ast_util
@@ -192,6 +193,25 @@ class FineTuner:
                                   ('voter_1', 0.4666666666666667, 15), ('wta_1', 0.5, 62),
                                   ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
                                   ('tvshow', 0.6612903225806451, 62)]
+
+                x = [item[0] for item in no_grad_scores]
+                y = [item[1] for item in no_grad_scores]
+                x_pos = [i for i, _ in enumerate(x)]
+                plt.bar(x_pos, y)
+                plt.xlabel('database')
+                plt.ylabel('score change')
+                plt.xticks(x_pos,x)
+                plt.show()
+                plt.savefig('no_grad_scores.png')
+                x = x[0]
+                y = y[0]
+                x_pos = x_pos[0]
+                plt.bar(x_pos, y)
+                plt.xlabel('database')
+                plt.ylabel('score change')
+                plt.xticks(x_pos, x)
+                plt.show()
+                plt.savefig('no_grad_scores_1.png')
                 print("No grad scores", no_grad_scores)
                 print("average", self.aggregate_score(no_grad_scores))
                 print("batch size 1")
