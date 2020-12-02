@@ -284,11 +284,15 @@ class FineTuner:
                 if no_grad_score[0] == new_score[0]:
                     results.append((no_grad_score[0], new_score[1]-no_grad_score[1]))
         return results
-    def get_no_repeat_data_indices(self, spider_data, val_data):
-        print("val_data")
-        print(val_data[0])
-        print("spider_data")
-        print(spider_data[0].orig.get('query'))
+    def get_no_repeat_data_indices(self, spider_data):
+        seen = set()
+        indices = []
+        for i in range(len(spider_data)):
+            if spider_data[i].orig.get('query').lower() not in seen:
+                indices.append(i)
+                seen.add(spider_data[i].orig.get('query').lower())
+
+        return indices
 
 
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
@@ -313,10 +317,15 @@ class FineTuner:
         if batch_size=="32":
             if len(val_data)<32:
                 return
-        if batch_size=="n^2":
-            self.get_no_repeat_data_indices(spider_data, val_data)
-        indices = np.random.permutation(len(val_data))
         print("database:", database)
+
+        if batch_size=="n^2":
+            indices = np.random.permutation(self.get_no_repeat_data_indices(spider_data))
+            print("length of data:", len(val_data))
+            print("length of data after removing repeat entries:", len(indices))
+        else:
+            indices = np.random.permutation(len(val_data))
+
         # TODO: RANDOMIZE DATA
         optimizer, lr_scheduler = self.construct_optimizer_and_lr_scheduler(config)
         saver = saver_mod.Saver(
