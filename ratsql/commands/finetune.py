@@ -288,10 +288,7 @@ class FineTuner:
         print("val_data")
         print(val_data[0])
         print("spider_data")
-
-        print(spider_data[0].text)
-        print(spider_data[0].code)
-        print(spider_data[0].orig)
+        print(spider_data[0].orig.get('query'))
 
 
     def finetune_on_database(self,infer_output_path, database, config,model_load_dir, beam_size, output_history,
