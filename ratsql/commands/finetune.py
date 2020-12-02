@@ -288,8 +288,6 @@ class FineTuner:
         seen = set()
         indices = []
         for i in range(len(spider_data)):
-            print(i)
-            print(spider_data[i].orig.get('query').lower())
             if spider_data[i].orig.get('query').lower() not in seen:
                 indices.append(i)
                 seen.add(spider_data[i].orig.get('query').lower())
