@@ -405,7 +405,7 @@ class FineTuner:
         final_metrics = metrics.finalize()
         metrics_list.append(final_metrics)
         #print(final_metrics['total_scores']['all']['exact'])
-        scores.append((database, final_metrics['total_scores']['all']['exact'], len(spider_data)))
+        scores.append((database, final_metrics['total_scores']['all']['exact'], len(indices)))
         # if last_step % self.finetune_config.save_every_n == 0:
         # saver.save(model_save_dir+'/seed_'+seed, last_step)
 
