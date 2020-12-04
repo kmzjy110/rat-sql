@@ -192,8 +192,8 @@ class FineTuner:
                                   ('voter_1', 0.4666666666666667, 15), ('wta_1', 0.5, 62),
                                   ('orchestra', 0.85, 40), ('car_1', 0.32608695652173914, 92),
                                   ('tvshow', 0.6612903225806451, 62)]
-                # average = self.aggregate_score(no_grad_scores)
-                # no_grad_scores.append(("average", average))
+                average = self.aggregate_score(no_grad_scores)
+                no_grad_scores.append(("average", average))
                 # self.plot(no_grad_scores, "no_grad_scores.png", "no grad scores")
                 # print("No grad scores", no_grad_scores)
                 # print("average", average)
